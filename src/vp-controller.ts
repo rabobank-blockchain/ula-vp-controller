@@ -17,7 +17,7 @@
 import { EventHandler, HttpService, Message, Plugin, UlaResponse } from 'universal-ledger-agent'
 import {
   ChallengeRequest,
-  IVerifiablePresentation,
+  IVerifiablePresentationParams,
   VerifiableCredential,
   VerifiablePresentation
 } from 'vp-toolkit-models'
@@ -220,12 +220,12 @@ export class VpController implements Plugin {
     // Send challengeresponse (VP) and process the response from the endpoint
     const challengeRequest = message.properties.payload.challengeRequest as ChallengeRequest
     const selfAttestedVP = message.properties.payload.verifiablePresentation as VerifiablePresentation
-    const response = await this._httpService.postRequest(message.properties.url, selfAttestedVP)
+    const response = await this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
     let issuedCredentials: VerifiableCredential[] = []
 
     // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
     if (challengeRequest.toAttest.length > 0) {
-      const vp = new VerifiablePresentation(response as IVerifiablePresentation)
+      const vp = new VerifiablePresentation(response as IVerifiablePresentationParams)
       issuedCredentials = vp.verifiableCredential
       const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
       const vpIsValidVp = matchingVpSigner

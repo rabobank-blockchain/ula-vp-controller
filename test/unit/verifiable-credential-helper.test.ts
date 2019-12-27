@@ -22,7 +22,7 @@ import { LocalCryptUtils } from 'crypt-util'
 import { EventHandler } from 'universal-ledger-agent'
 import { AddressHelper, VerifiableCredentialHelper } from '../../src'
 import { VerifiableCredentialGenerator, VerifiableCredentialSigner } from 'vp-toolkit'
-import { ChallengeRequest, IProof, IVerifiableCredential, VerifiableCredential } from 'vp-toolkit-models'
+import { ChallengeRequest, IProofParams, IVerifiableCredentialParams, VerifiableCredential } from 'vp-toolkit-models'
 import { Address, IAddress } from 'ula-vc-data-management'
 
 before(() => {
@@ -39,7 +39,8 @@ describe('verifiable credential helper', function () {
   const addressHelper = new AddressHelper(cryptUtil)
   const publicAddress = '0x4900133bD1b8934946106CEc7DB3eD931710DC92'
   const predicate = 'http://schema.org/address'
-  const testProof: IProof = {
+  const postEndpoint = 'http://domain.org/ssi/verifiable-presentation-endpoint'
+  const testProof: IProofParams = {
     type: 'Secp256k1Signature2019',
     created: new Date('01-01-2019 12:34:00'),
     verificationMethod: 'pubkey',
@@ -85,6 +86,7 @@ describe('verifiable credential helper', function () {
     const sut = new VerifiableCredentialHelper(vcGenerator, addressHelper)
     const challengeRequest = new ChallengeRequest({
       toVerify: [{ predicate: predicate }, { predicate: predicate2 }],
+      postEndpoint: postEndpoint,
       proof: testProof
     })
 
@@ -162,6 +164,7 @@ describe('verifiable credential helper', function () {
         { predicate: predicate4, allowedIssuers: ['did:eth:someBankIssuer'] },
         { predicate: predicate5 }
       ],
+      postEndpoint: postEndpoint,
       proof: testProof
     })
 
@@ -250,6 +253,7 @@ describe('verifiable credential helper', function () {
         { predicate: predicate }, // address
         { predicate: predicate2, allowedIssuers: ['did:eth:otherIssuer'] }
       ],
+      postEndpoint: postEndpoint,
       proof: testProof
     })
 
@@ -274,6 +278,7 @@ describe('verifiable credential helper', function () {
     const sut = new VerifiableCredentialHelper(vcGenerator, addressHelper)
     const challengeRequest = new ChallengeRequest({
       toAttest: [{ predicate: predicate }, { predicate: predicate2 }],
+      postEndpoint: postEndpoint,
       proof: testProof
     })
 
@@ -303,6 +308,7 @@ describe('verifiable credential helper', function () {
     const sut = new VerifiableCredentialHelper(vcGenerator, addressHelper)
     const challengeRequest = new ChallengeRequest({
       toAttest: [{ predicate: predicate }],
+      postEndpoint: postEndpoint,
       proof: testProof
     })
 
@@ -324,7 +330,7 @@ describe('verifiable credential helper', function () {
     const sut = new VerifiableCredentialHelper(vcGenerator, addressHelper)
     const holderAddress = '0x1aFC43cF265ac09434Cf3B16e4fAfD82b710c2c9'
     const issuerAddress = '0x0df4e8ff5c455876dae4f46d1175e0fc8fe0bad6'
-    const issuerVcWithoutProof: IVerifiableCredential = {
+    const issuerVcWithoutProof: IVerifiableCredentialParams = {
       type: ['VerifiableCredential'],
       credentialSubject: {
         id: 'did:eth:' + holderAddress
@@ -379,7 +385,7 @@ describe('verifiable credential helper', function () {
     const sut = new VerifiableCredentialHelper(vcGenerator, addressHelper)
     const holderAddress = '0x1aFC43cF265ac09434Cf3B16e4fAfD82b710c2c9'
     const issuerAddress = '0x0df4e8ff5c455876dae4f46d1175e0fc8fe0bad6'
-    const issuerVcWithoutProof: IVerifiableCredential = {
+    const issuerVcWithoutProof: IVerifiableCredentialParams = {
       type: ['VerifiableCredential'],
       credentialSubject: {
         id: 'did:eth:' + holderAddress
