@@ -63,11 +63,12 @@ However, if you want to invoke this plugin manually, send a ULA message with thi
 const msg = {
   type: 'process-challengerequest',
   endpoint: '{endpoint from QR code}',
-  msg: { /* ChallengeRequest object */
-    "toVerify": [{predicate: "{schema.org URL}", allowedIssuers: ["did:eth:allowedIssuer"]}, {predicate: "{schema.org URL}"}],
-    "toAttest": [{predicate: "{schema.org URL}"}, {predicate: "{schema.org URL}"}],
-    "proof": { /* Proof object */ },
-    "nonce": "{uuid}"
+  msg: { /* IChallengeRequestParamsfields */
+    toVerify: [{predicate: "{schema.org URL}", allowedIssuers: ["did:eth:allowedIssuer"]}, {predicate: "{schema.org URL}"}],
+    toAttest: [{predicate: "{schema.org URL}"}, {predicate: "{schema.org URL}"}],
+    postEndpoint: '{endpoint URL}', // The holder will post a VerifiablePresentation object here
+    proof: { /* Proof object */ },
+    nonce: "{uuid}"
   }
 }
 

@@ -60,8 +60,6 @@ describe('vp controller handle event', function () {
   const addressHelper = new AddressHelper(cryptUtil)
   const vcHelper = new VerifiableCredentialHelper(vcGenerator, addressHelper)
   let sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
-  const ulaMessageType = 'process-challengerequest'
-  const ulaMessageEndpoint = 'https://example.com'
   const testProof = {
     type: 'SomeSignature2019',
     created: new Date('01-01-2019 12:34:00'),
@@ -73,12 +71,15 @@ describe('vp controller handle event', function () {
     correspondenceId: '3ead8ae0-2d8b-41de-a54b-2d99927e458c',
     toAttest: [{ predicate: 'http://schema.org/givenName' }],
     toVerify: [{ predicate: 'http://schema.org/familyName' }],
+    postEndpoint: 'http://domain.org/ssi/verifiable-presentation-endpoint',
     proof: testProof
   }
-  const ulaMessage = new Message(
+  const initialUlaMessageType = 'process-challengerequest'
+  const getChallengeRequestEndpoint = 'http://domain.org/ssi/get-challenge-request'
+  const initialUlaMessage = new Message(
     {
-      type: ulaMessageType,
-      endpoint: ulaMessageEndpoint,
+      type: initialUlaMessageType,
+      endpoint: getChallengeRequestEndpoint,
       msg: issueAndVerifyCRParams
     }
   )
@@ -104,14 +105,14 @@ describe('vp controller handle event', function () {
   })
 
   it('should return "ignored" when the message does not contain an endpoint property', () => {
-    const incompleteMessage = new Message({ type: ulaMessageType, msg: {} })
+    const incompleteMessage = new Message({ type: initialUlaMessageType, msg: {} })
     const handleEventCall = sut.handleEvent(incompleteMessage, undefined)
     return handleEventCall.should.eventually.equal('ignored')
   })
 
   it('should return "ignored" when the message does not contain an msg property', () => {
     const incompleteMessage = new Message({
-      type: ulaMessageType,
+      type: initialUlaMessageType,
       endpoint: 'https://example.com'
     })
     const handleEventCall = sut.handleEvent(incompleteMessage, undefined)
@@ -119,7 +120,7 @@ describe('vp controller handle event', function () {
   })
 
   it('should throw when the plugin was not initialized', () => {
-    const handleEvent = sut.handleEvent(ulaMessage, undefined)
+    const handleEvent = sut.handleEvent(initialUlaMessage, undefined)
 
     return handleEvent.should.eventually.be.rejectedWith('Plugin not initialized. Did you forget to call initialize() ?')
   })
@@ -128,14 +129,14 @@ describe('vp controller handle event', function () {
     const crSignerStub = sinon.stub(crSigner, 'verifyChallengeRequest').returns(false)
     sinon.stub(crSigner, 'signatureType').get(() => testProof.type)
     sut.initialize(new EventHandler([]))
-    const handleEventCall = sut.handleEvent(ulaMessage, undefined)
+    const handleEventCall = sut.handleEvent(initialUlaMessage, undefined)
     crSignerStub.should.have.been.calledOnceWithExactly(new ChallengeRequest(issueAndVerifyCRParams))
     return handleEventCall.should.eventually.equal('error-cr')
   })
 
   it('should return "error" when the given challengeRequest json is invalid', () => {
     const incompleteMessage = new Message({
-      type: ulaMessageType,
+      type: initialUlaMessageType,
       endpoint: 'https://example.com',
       msg: { a: 'b' }
     })
@@ -157,7 +158,6 @@ describe('vp controller handle event', function () {
     const acceptConsentMessage = new Message(
       {
         type: 'accept-consent',
-        endpoint: ulaMessageEndpoint,
         payload: {
           challengeRequest: issueAndVerifyCRParams,
           verifiablePresentation: testData.issuerVpWithProof
@@ -189,7 +189,6 @@ describe('vp controller handle event', function () {
     const acceptConsentMessage = new Message(
       {
         type: 'accept-consent',
-        endpoint: ulaMessageEndpoint,
         payload: {
           challengeRequest: issueAndVerifyCRParams,
           verifiablePresentation: testData.issuerVpWithProof
@@ -224,7 +223,6 @@ describe('vp controller handle event', function () {
     const acceptConsentMessage = new Message(
       {
         type: 'accept-consent',
-        endpoint: ulaMessageEndpoint,
         payload: {
           challengeRequest: issueAndVerifyCRParams,
           verifiablePresentation: testData.issuerVpWithProof
@@ -264,7 +262,7 @@ describe('vp controller handle event', function () {
     sut = new VpController(vpGenerator, [vpSigner], [wrongcrSigner, crSigner, wrongcrSigner], httpService, vcHelper, addressHelper, accountId)
     sut.initialize(eventHandler)
 
-    sut.handleEvent(ulaMessage, () => {
+    sut.handleEvent(initialUlaMessage, () => {
       // Do nothing
     }).then(() => {
       const expectedChallengeRequestObj = new ChallengeRequest(issueAndVerifyCRParams)
@@ -280,7 +278,7 @@ describe('vp controller handle event', function () {
     sut = new VpController(vpGenerator, [vpSigner], [wrongcrSigner, wrongcrSigner], httpService, vcHelper, addressHelper, accountId)
     sut.initialize(new EventHandler([]))
 
-    const handleEventCall = sut.handleEvent(ulaMessage, undefined)
+    const handleEventCall = sut.handleEvent(initialUlaMessage, undefined)
 
     wrongCrSignerStub.callCount.should.be.equal(0)
     return handleEventCall.should.eventually.equal('error-cr')
@@ -292,7 +290,7 @@ describe('vp controller handle event', function () {
     sinon.stub(crSigner, 'signatureType').get(() => testProof.type)
     sut.initialize(new EventHandler([]))
 
-    sut.handleEvent(ulaMessage, (response: UlaResponse) => {
+    sut.handleEvent(initialUlaMessage, (response: UlaResponse) => {
       ulaResponses.push(response)
     }).then((outcome: string) => {
       ulaResponses.length.should.be.equal(2)
@@ -332,7 +330,7 @@ describe('vp controller handle event', function () {
 
     sut.initialize(eventHandler)
 
-    sut.handleEvent(ulaMessage, (response: UlaResponse) => {
+    sut.handleEvent(initialUlaMessage, (response: UlaResponse) => {
       ulaResponses.push(response)
     }).then((outcome: string) => {
       const expectedChallengeRequestObj = new ChallengeRequest(issueAndVerifyCRParams)
@@ -369,7 +367,7 @@ describe('vp controller handle event', function () {
       {
         type: 'accept-consent',
         payload: testData.consentRequest.filledTemplate,
-        url: ulaMessage.properties.endpoint
+        url: initialUlaMessage.properties.endpoint
       }
     )
     sut.initialize(eventHandler)
@@ -383,7 +381,7 @@ describe('vp controller handle event', function () {
       ulaResponses[0].body.should.be.deep.equal({ loading: false, success: true, failure: false })
       ulaResponses[1].statusCode.should.be.equal(201)
       ulaResponses[1].body.should.be.deep.equal({})
-      httpServiceStub.should.have.been.calledOnceWithExactly(consentUlaMessage.properties.url, testData.selfSignedVpWithProof)
+      httpServiceStub.should.have.been.calledOnceWithExactly(testData.consentRequest.filledTemplate.challengeRequest.postEndpoint, testData.selfSignedVpWithProof)
       vpSignerStub.should.have.been.calledOnceWithExactly(expectedIssuerVp, true)
       vcHelperSaveStub.should.have.been.calledOnceWith(expectedIssuerVp.verifiableCredential)
       outcome.should.be.equal('success')
@@ -411,7 +409,7 @@ describe('vp controller handle event', function () {
 
     sut.initialize(eventHandler)
 
-    sut.handleEvent(ulaMessage, (response: UlaResponse) => {
+    sut.handleEvent(initialUlaMessage, (response: UlaResponse) => {
       ulaResponses.push(response)
     }).then((outcome: string) => {
       const expectedChallengeRequestObj = new ChallengeRequest(issueAndVerifyCRParams)
@@ -444,7 +442,7 @@ describe('vp controller handle event', function () {
       {
         type: 'accept-consent',
         payload: testData.consentRequest.filledTemplate,
-        url: ulaMessage.properties.endpoint
+        url: initialUlaMessage.properties.endpoint
       }
     )
     sut.initialize(eventHandler)
@@ -470,6 +468,7 @@ describe('vp controller handle event', function () {
       {
         // Nothing to attest
         toVerify: testData.consentRequest.filledTemplate.challengeRequest.toVerify,
+        postEndpoint: testData.consentRequest.filledTemplate.challengeRequest.postEndpoint,
         proof: testData.consentRequest.filledTemplate.challengeRequest.proof.toJSON() as IProofParams
       }
     )
@@ -484,7 +483,7 @@ describe('vp controller handle event', function () {
       {
         type: 'accept-consent',
         payload: testData.consentRequest.filledTemplate,
-        url: ulaMessage.properties.endpoint
+        url: initialUlaMessage.properties.endpoint
       }
     )
     let ulaResponses: UlaResponse[] = []
@@ -499,7 +498,10 @@ describe('vp controller handle event', function () {
       ulaResponses[0].body.should.be.deep.equal({ loading: false, success: true, failure: false })
       ulaResponses[1].statusCode.should.be.equal(201)
       ulaResponses[1].body.should.be.deep.equal({})
-      httpServiceStub.should.have.been.calledOnceWithExactly(ulaMessageEndpoint, testData.selfSignedVpWithProof)
+      httpServiceStub.should.have.been.calledOnceWithExactly(
+        testData.consentRequest.filledTemplate.challengeRequest.postEndpoint,
+        testData.selfSignedVpWithProof
+      )
       vpSignerStub.callCount.should.be.equal(0)
       vcHelperSaveStub.callCount.should.be.equal(1)
       outcome.should.be.equal('success')
@@ -514,6 +516,7 @@ describe('vp controller handle event', function () {
       {
         // Issuer has nothing to verify
         toAttest: testData.consentRequest.filledTemplate.challengeRequest.toAttest,
+        postEndpoint: testData.consentRequest.filledTemplate.challengeRequest.postEndpoint,
         proof: testData.consentRequest.filledTemplate.challengeRequest.proof.toJSON() as IProofParams
       })
     testData.consentRequest.filledTemplate.challengeRequest = issuerChallengeRequest
@@ -541,8 +544,8 @@ describe('vp controller handle event', function () {
     let ulaResponses: UlaResponse[] = []
     const ulaMessage = new Message(
       {
-        type: ulaMessageType,
-        endpoint: ulaMessageEndpoint,
+        type: initialUlaMessageType,
+        endpoint: getChallengeRequestEndpoint,
         msg: issuerChallengeRequest.toJSON()
       })
 
@@ -559,7 +562,7 @@ describe('vp controller handle event', function () {
       ulaResponses[1].body.should.be.deep.equal({})
       verifyVpStub.should.have.been.calledOnceWithExactly(expectedIssuerVp, true)
       vcHelperSaveStub.should.have.been.calledOnceWith(expectedIssuerVp.verifiableCredential)
-      httpServiceStub.should.have.been.calledOnceWithExactly(ulaMessageEndpoint, testData.selfSignedVpWithProof)
+      httpServiceStub.should.have.been.calledOnceWithExactly(testData.consentRequest.filledTemplate.challengeRequest.postEndpoint, testData.selfSignedVpWithProof)
       outcome.should.be.equal('success')
       done()
     })
@@ -644,7 +647,7 @@ describe('vp controller handle event', function () {
         challengeRequest: new ChallengeRequest(issueAndVerifyCRParams),
         verifiablePresentation: selfSignedVpWithProof
       },
-      url: ulaMessage.properties.endpoint,
+      url: initialUlaMessage.properties.endpoint,
       type: 'accept-consent'
     }
     let emptyConsentRequest = {
@@ -654,7 +657,7 @@ describe('vp controller handle event', function () {
         challengeRequest: new ChallengeRequest(issueAndVerifyCRParams),
         verifiablePresentation: undefined
       },
-      url: ulaMessage.properties.endpoint,
+      url: initialUlaMessage.properties.endpoint,
       type: 'accept-consent'
     }
 

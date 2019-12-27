@@ -220,7 +220,7 @@ export class VpController implements Plugin {
     // Send challengeresponse (VP) and process the response from the endpoint
     const challengeRequest = message.properties.payload.challengeRequest as ChallengeRequest
     const selfAttestedVP = message.properties.payload.verifiablePresentation as VerifiablePresentation
-    const response = await this._httpService.postRequest(message.properties.url, selfAttestedVP)
+    const response = await this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
     let issuedCredentials: VerifiableCredential[] = []
 
     // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
