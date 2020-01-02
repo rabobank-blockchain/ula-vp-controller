@@ -25,6 +25,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const universal_ledger_agent_1 = require("universal-ledger-agent");
 const vp_toolkit_models_1 = require("vp-toolkit-models");
+const vp_toolkit_1 = require("vp-toolkit")
+const verifiable_credential_helper_1 = require("./service/verifiable-credential-helper")
+const address_helper_1 = require("./service/address-helper")
 /**
  * The VP Controller ULA plugin
  * ensures a correct issue/verify flow
@@ -33,40 +36,53 @@ const vp_toolkit_models_1 = require("vp-toolkit-models");
  */
 class VpController {
     /**
-     * Provide the generators you want to use
-     * in order to generate VerifiableCredentials
-     * and VerifiablePresentations.
-     *
-     * Multiple signers for one class can be provided,
-     * so you can verify objects which were signed with
-     * different algorithms. If the VerifiablePresentation
-     * from the issuer does not contain any proofs, the
-     * first given VerifiablePresentationSigner will be
-     * used. Create your own signer by overriding the
-     * existing signer class.
-     *
      * The account ID is the 'wallet' or 'profile'
      * identifier the current user is utilizing.
      * If your wallet implementation does not provide
-     * multiple wallets/profiles, then you can
-     * provide 0 as accountId value.
+     * multiple wallets/profiles, use the default value.
      *
-     * @param {VerifiablePresentationGenerator} _vpGenerator
-     * @param {VerifiablePresentationSigner[]} _vpSigners
-     * @param {ChallengeRequestSigner[]} _challengeRequestSigners
-     * @param {HttpService} _httpService
-     * @param {VerifiableCredentialHelper} _vcHelper
-     * @param {AddressHelper} _addressHelper
-     * @param {number} _accountId
+     * The overrides allow you to customize the behaviour
+     * of the VP controller:
+     * - vpGenerator creates VerifiableCredentials
+     *   and VerifiablePresentations
+     * - Various signers can be provided, so you can
+     *   verify objects (VerifiablePresentations &
+     *   VerifiableCredentials and ChallengeRequests)
+     *   which were signed with different algorithms.
+     * - The HttpService is responsible for GETting and
+     *   POSTing payloads to the provided endpoints.
+     * - The AddressHelper and VerifiableCredentialHelper
+     *   act as bridges to the data layer for retrieving
+     *   and saving data.
+     *
+     * The CryptUtil you provide will only be used to
+     * create default objects which are not overridden.
+     * If you don't deviate from the default protocol,
+     * you don't have to provide any overrides.
+     *
+     * @param {CryptUtil} _cryptUtil
+     * @param {number} _accountIdParam
+     * @param _overrides
      */
-    constructor(_vpGenerator, _vpSigners, _challengeRequestSigners, _httpService, _vcHelper, _addressHelper, _accountId) {
-        this._vpGenerator = _vpGenerator;
-        this._vpSigners = _vpSigners;
-        this._challengeRequestSigners = _challengeRequestSigners;
-        this._httpService = _httpService;
-        this._vcHelper = _vcHelper;
-        this._addressHelper = _addressHelper;
-        this._accountId = _accountId;
+    constructor(_cryptUtil, _accountIdParam, _overrides) {
+      this._cryptUtil = _cryptUtil
+      this._accountIdParam = _accountIdParam
+      this._overrides = _overrides
+      this._accountId = _accountIdParam || 0
+      // For each object either use override or, if not defined, a new default value
+      this._vpGenerator = _overrides && _overrides.vpGenerator ? _overrides.vpGenerator
+        : new vp_toolkit_1.VerifiablePresentationGenerator(new vp_toolkit_1.VerifiablePresentationSigner(this._cryptUtil, new vp_toolkit_1.VerifiableCredentialSigner(this._cryptUtil)))
+      this._vpSigners = _overrides && _overrides.vpSigners ? _overrides.vpSigners
+        : [new vp_toolkit_1.VerifiablePresentationSigner(this._cryptUtil, new vp_toolkit_1.VerifiableCredentialSigner(this._cryptUtil))]
+      this._challengeRequestSigners = _overrides && _overrides.challengeRequestSigners
+        ? _overrides.challengeRequestSigners
+        : [new vp_toolkit_1.ChallengeRequestSigner(this._cryptUtil)]
+      this._httpService = _overrides && _overrides.httpService ? _overrides.httpService
+        : new universal_ledger_agent_1.BrowserHttpService()
+      this._addressHelper = _overrides && _overrides.addressHelper ? _overrides.addressHelper
+        : new address_helper_1.AddressHelper(this._cryptUtil)
+      this._vcHelper = _overrides && _overrides.vcHelper ? _overrides.vcHelper
+        : new verifiable_credential_helper_1.VerifiableCredentialHelper(new vp_toolkit_1.VerifiableCredentialGenerator(new vp_toolkit_1.VerifiableCredentialSigner(this._cryptUtil)), this._addressHelper)
     }
     /**
      * The name of the plugin
@@ -197,7 +213,7 @@ class VpController {
             // Send challengeresponse (VP) and process the response from the endpoint
             const challengeRequest = message.properties.payload.challengeRequest;
             const selfAttestedVP = message.properties.payload.verifiablePresentation;
-            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
+          const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
             let issuedCredentials = [];
             // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
             if (challengeRequest.toAttest.length > 0) {
@@ -213,7 +229,7 @@ class VpController {
                 }
             }
             // Save the VC's coming from the issuer
-            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
+          yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
             // @ts-ignore
             this._eventHandler);
             callback(new universal_ledger_agent_1.UlaResponse({ statusCode: 1, body: { loading: false, success: true, failure: false } }));

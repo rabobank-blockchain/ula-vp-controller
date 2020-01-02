@@ -38,8 +38,8 @@ import {
   VerifiablePresentationSigner
 } from 'vp-toolkit'
 import { Address, IAddress } from 'ula-vc-data-management'
-import { VerifiablePresentationSignerMock } from '../mock/vp-signer-mock'
 import { ChallengeRequestSignerMock } from '../mock/cr-signer-mock'
+import { VerifiablePresentationSignerMock } from '../mock/vp-signer-mock'
 
 before(() => {
   chai.should()
@@ -59,7 +59,7 @@ describe('vp controller handle event', function () {
   const httpService = new BrowserHttpService()
   const addressHelper = new AddressHelper(cryptUtil)
   const vcHelper = new VerifiableCredentialHelper(vcGenerator, addressHelper)
-  let sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+  let sut = getNewSut()
   const testProof = {
     type: 'SomeSignature2019',
     created: new Date('01-01-2019 12:34:00'),
@@ -93,7 +93,14 @@ describe('vp controller handle event', function () {
 
   afterEach(() => {
     cryptUtil = new LocalCryptUtils()
-    sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [vpSigner],
+      challengeRequestSigners: [crSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
     clock.restore()
     sinon.restore()
   })
@@ -164,7 +171,7 @@ describe('vp controller handle event', function () {
         }
       }
     )
-    sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = getNewSut()
     sut.initialize(eventHandler)
 
     sut.handleEvent(acceptConsentMessage, () => {
@@ -195,7 +202,15 @@ describe('vp controller handle event', function () {
         }
       }
     )
-    sut = new VpController(vpGenerator, [wrongvpSigner, vpSigner, wrongvpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [wrongvpSigner, vpSigner, wrongvpSigner],
+      challengeRequestSigners: [crSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
+
     sut.initialize(eventHandler)
 
     sut.handleEvent(acceptConsentMessage, () => {
@@ -229,7 +244,15 @@ describe('vp controller handle event', function () {
         }
       }
     )
-    sut = new VpController(vpGenerator, [wrongvpSigner, vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [wrongvpSigner, vpSigner],
+      challengeRequestSigners: [crSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
+
     sut.initialize(eventHandler)
 
     sut.handleEvent(acceptConsentMessage, () => {
@@ -259,7 +282,15 @@ describe('vp controller handle event', function () {
     sinon.stub(vpSigner, 'verifyVerifiablePresentation').returns(true)
     sinon.stub(vpSigner, 'signatureType').get(() => testProof.type)
     sinon.stub(vcHelper, 'saveIssuedVCs').resolves()
-    sut = new VpController(vpGenerator, [vpSigner], [wrongcrSigner, crSigner, wrongcrSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [vpSigner],
+      challengeRequestSigners: [wrongcrSigner, crSigner, wrongcrSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
+
     sut.initialize(eventHandler)
 
     sut.handleEvent(initialUlaMessage, () => {
@@ -275,7 +306,15 @@ describe('vp controller handle event', function () {
   it('should return "error-cr" when no appropriate crSigner is present', () => {
     const wrongcrSigner = new ChallengeRequestSignerMock(cryptUtil)
     const wrongCrSignerStub = sinon.stub(wrongcrSigner, 'verifyChallengeRequest')
-    sut = new VpController(vpGenerator, [vpSigner], [wrongcrSigner, wrongcrSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [vpSigner],
+      challengeRequestSigners: [wrongcrSigner, wrongcrSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
+
     sut.initialize(new EventHandler([]))
 
     const handleEventCall = sut.handleEvent(initialUlaMessage, undefined)
@@ -567,6 +606,22 @@ describe('vp controller handle event', function () {
       done()
     })
   })
+
+  /**
+   * Creates a new VpController object
+   * with all specified overrides
+   * @return {VpController}
+   */
+  function getNewSut (): VpController {
+    return new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [vpSigner],
+      challengeRequestSigners: [crSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
+  }
 
   /**
    * Creating data for the happy flow in
