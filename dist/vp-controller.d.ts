@@ -1,23 +1,8 @@
-/*
- *  Copyright 2020 Coöperatieve Rabobank U.A.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
 import { EventHandler, HttpService, Message, Plugin } from 'universal-ledger-agent'
 import { ChallengeRequestSigner, VerifiablePresentationGenerator, VerifiablePresentationSigner } from 'vp-toolkit'
 import { VerifiableCredentialHelper } from './service/verifiable-credential-helper'
 import { AddressHelper } from './service/address-helper'
+import { CryptUtil } from 'crypt-util'
 
 /**
  * The VP Controller ULA plugin
@@ -26,68 +11,76 @@ import { AddressHelper } from './service/address-helper'
  * the correct dependencies.
  */
 export declare class VpController implements Plugin {
-  private _vpGenerator
-  private _vpSigners
-    private _challengeRequestSigners;
-    private _httpService;
-    private _vcHelper;
-    private _addressHelper;
-    private _accountId;
+  private _cryptUtil
+  private _accountIdParam?
+  private _overrides?
     private _eventHandler?;
+  private _accountId
+  private readonly _vpGenerator
+  private readonly _vpSigners
+  private readonly _challengeRequestSigners
+  private readonly _httpService
+  private readonly _vcHelper
+  private readonly _addressHelper
     /**
-     * Provide the generators you want to use
-     * in order to generate VerifiableCredentials
-     * and VerifiablePresentations.
-     *
-     * Multiple signers for one class can be provided,
-     * so you can verify objects which were signed with
-     * different algorithms. If the VerifiablePresentation
-     * from the issuer does not contain any proofs, the
-     * first given VerifiablePresentationSigner will be
-     * used. Create your own signer by overriding the
-     * existing signer class.
-     *
      * The account ID is the 'wallet' or 'profile'
      * identifier the current user is utilizing.
      * If your wallet implementation does not provide
-     * multiple wallets/profiles, then you can
-     * provide 0 as accountId value.
+     * multiple wallets/profiles, use the default value.
      *
-     * @param {VerifiablePresentationGenerator} _vpGenerator
-     * @param {VerifiablePresentationSigner[]} _vpSigners
-     * @param {ChallengeRequestSigner[]} _challengeRequestSigners
-     * @param {HttpService} _httpService
-     * @param {VerifiableCredentialHelper} _vcHelper
-     * @param {AddressHelper} _addressHelper
-     * @param {number} _accountId
+     * The overrides allow you to customize the behaviour
+     * of the VP controller:
+     * - vpGenerator creates VerifiableCredentials
+     *   and VerifiablePresentations
+     * - Various signers can be provided, so you can
+     *   verify objects (VerifiablePresentations &
+     *   VerifiableCredentials and ChallengeRequests)
+     *   which were signed with different algorithms.
+     * - The HttpService is responsible for GETting and
+     *   POSTing payloads to the provided endpoints.
+     * - The AddressHelper and VerifiableCredentialHelper
+     *   act as bridges to the data layer for retrieving
+     *   and saving data.
+     *
+     * The CryptUtil you provide will only be used to
+     * create default objects which are not overridden.
+     * If you don't deviate from the default protocol,
+     * you don't have to provide any overrides.
+     *
+     * @param {CryptUtil} _cryptUtil
+     * @param {number} _accountIdParam
+     * @param _overrides
      */
-    constructor (_vpGenerator: VerifiablePresentationGenerator, _vpSigners: VerifiablePresentationSigner[], _challengeRequestSigners: ChallengeRequestSigner[], _httpService: HttpService, _vcHelper: VerifiableCredentialHelper, _addressHelper: AddressHelper, _accountId: number);
-
-  /**
-   * The name of the plugin
-   * @return {string}
-   */
-  get name (): string;
-
-  /**
-   * The current wallet/profile ID
-   * @return {number}
-   */
-  get accountId (): number;
-  /**
-   * When the user switches to a different
-   * wallet/profile, update the accountId
-   * to make sure the correct keys are
-   * generated and used.
-   */
-  set accountId (id: number);
-
-  /**
-   * Receive the eventHandler so we can put messages
-   * back on the ULA again
-   * @param {EventHandler} eventHandler
-   */
-  initialize (eventHandler: EventHandler): void;
+    constructor (_cryptUtil: CryptUtil, _accountIdParam?: number | undefined, _overrides?: {
+      vpGenerator?: VerifiablePresentationGenerator | undefined;
+      vpSigners?: VerifiablePresentationSigner[] | undefined;
+      challengeRequestSigners?: ChallengeRequestSigner[] | undefined;
+      httpService?: HttpService | undefined;
+      addressHelper?: AddressHelper | undefined;
+      vcHelper?: VerifiableCredentialHelper | undefined;
+    } | undefined);
+    /**
+     * The name of the plugin
+     * @return {string}
+     */
+    readonly name: string;
+    /**
+     * The current wallet/profile ID
+     * @return {number}
+     */
+    /**
+    * When the user switches to a different
+    * wallet/profile, update the accountId
+    * to make sure the correct keys are
+    * generated and used.
+    */
+    accountId: number;
+    /**
+     * Receive the eventHandler so we can put messages
+     * back on the ULA again
+     * @param {EventHandler} eventHandler
+     */
+    initialize(eventHandler: EventHandler): void;
     /**
      * Handle incoming messages
      * @param {Message} message

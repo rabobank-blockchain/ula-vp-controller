@@ -10,42 +10,31 @@ This implementation uses secp256k1 by default. If you want to use a different cr
 
 ## Installation
 
-If you work with QR codes, please read the instructions in the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) repository.
-Also, in order to save credentials properly, we advise to install the [ula-vc-data-management](https://github.com/rabobank-blockchain/ula-vc-data-management) plugin as well.
+**If you work with QR codes, please read the instructions in the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) repository.
+Also, in order to save credentials properly, we advise to install the [ula-vc-data-management](https://github.com/rabobank-blockchain/ula-vc-data-management) plugin.**
 
-In an existing project (with `package.json`), install the plugin by running the following commands:
+In an existing project (with `package.json`), install the ULA and this plugin by running the following commands:
 
 ```bash
 npm install universal-ledger-agent --save
 npm install crypt-util --save
-npm install vp-toolkit --save
-npm install ula-vp-controller-plugin --save
+npm install ula-vp-controller --save
 ```
 
-## Usage
-
-This is an example of enabling this plugin in the ULA in a browser environment.
+Then setup this plugin and enable the ULA.
 
 ```typescript
-import { BrowserHttpService, EventHandler } from "universal-ledger-agent";
+import { EventHandler } from "universal-ledger-agent";
 import { VpController } from "ula-vp-controller";
 import { LocalCryptUtils } from "crypt-util";
-import {
-  VerifiableCredentialGenerator,
-  VerifiableCredentialSigner,
-  VerifiablePresentationGenerator,
-  VerifiablePresentationSigner
-} from "vp-toolkit";
 
-// Prepare plugin dependencies
-const browserHttpService = new BrowserHttpService()
+// You need to provide a CryptUtil object in order to sign and verify objects
+const yourPrivateMasterKey = 'xprv9s21ZrQH143K4Hahxy3chUqrrHbCynU5CcnRg9xijCvCG4f3AJb1PgiaXpjik6pDnT1qRmf3V3rzn26UNMWDjfEpUKL4ouy6t5ZVa4GAJVG'
 const cryptUtil = new LocalCryptUtils()
-const vcSigner = new VerifiableCredentialSigner(cryptUtil)
-const vcGenerator = new VerifiableCredentialGenerator(vcSigner)
-const vpSigner = new VerifiablePresentationSigner(cryptUtil)
-const vpGenerator = new VerifiablePresentationGenerator(vpSigner)
+cryptUtil.importMasterPrivateKey(yourPrivateMasterKey)
+
 // Instantiate the plugin
-const vpControllerPlugin = new VpController(cryptUtil, vcGenerator, vpGenerator, browserHttpService)
+const vpControllerPlugin = new VpController(cryptUtil)
 
 // Setup the ULA and inject the plugin
 const ulaEventHandler = new EventHandler([vpControllerPlugin /*, other ULA plugins here */])

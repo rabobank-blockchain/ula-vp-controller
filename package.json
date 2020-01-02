@@ -70,6 +70,7 @@
     "typescript": "^3.4.5"
   },
   "dependencies": {
+    "crypt-util": "^0.1.2",
     "ula-vc-data-management": "^0.1.0",
     "universal-ledger-agent": "^0.1.1",
     "vp-toolkit": "^0.2.0",

@@ -14,16 +14,23 @@
  *  limitations under the License.
  */
 
-import { EventHandler, HttpService, Message, Plugin, UlaResponse } from 'universal-ledger-agent'
+import { BrowserHttpService, EventHandler, HttpService, Message, Plugin, UlaResponse } from 'universal-ledger-agent'
 import {
   ChallengeRequest,
   IVerifiablePresentationParams,
   VerifiableCredential,
   VerifiablePresentation
 } from 'vp-toolkit-models'
-import { ChallengeRequestSigner, VerifiablePresentationGenerator, VerifiablePresentationSigner } from 'vp-toolkit'
+import {
+  ChallengeRequestSigner,
+  VerifiableCredentialGenerator,
+  VerifiableCredentialSigner,
+  VerifiablePresentationGenerator,
+  VerifiablePresentationSigner
+} from 'vp-toolkit'
 import { VerifiableCredentialHelper } from './service/verifiable-credential-helper'
 import { AddressHelper } from './service/address-helper'
+import { CryptUtil } from 'crypt-util'
 import { CredentialConsentData, VcSearchResult } from './interface'
 
 /**
@@ -34,43 +41,75 @@ import { CredentialConsentData, VcSearchResult } from './interface'
  */
 export class VpController implements Plugin {
   private _eventHandler?: EventHandler
+  private _accountId: number
+  private readonly _vpGenerator: VerifiablePresentationGenerator
+  private readonly _vpSigners: VerifiablePresentationSigner[]
+  private readonly _challengeRequestSigners: ChallengeRequestSigner[]
+  private readonly _httpService: HttpService
+  private readonly _vcHelper: VerifiableCredentialHelper
+  private readonly _addressHelper: AddressHelper
 
   /**
-   * Provide the generators you want to use
-   * in order to generate VerifiableCredentials
-   * and VerifiablePresentations.
-   *
-   * Multiple signers for one class can be provided,
-   * so you can verify objects which were signed with
-   * different algorithms. If the VerifiablePresentation
-   * from the issuer does not contain any proofs, the
-   * first given VerifiablePresentationSigner will be
-   * used. Create your own signer by overriding the
-   * existing signer class.
-   *
    * The account ID is the 'wallet' or 'profile'
    * identifier the current user is utilizing.
    * If your wallet implementation does not provide
-   * multiple wallets/profiles, then you can
-   * provide 0 as accountId value.
+   * multiple wallets/profiles, use the default value.
    *
-   * @param {VerifiablePresentationGenerator} _vpGenerator
-   * @param {VerifiablePresentationSigner[]} _vpSigners
-   * @param {ChallengeRequestSigner[]} _challengeRequestSigners
-   * @param {HttpService} _httpService
-   * @param {VerifiableCredentialHelper} _vcHelper
-   * @param {AddressHelper} _addressHelper
-   * @param {number} _accountId
+   * The overrides allow you to customize the behaviour
+   * of the VP controller:
+   * - vpGenerator creates VerifiableCredentials
+   *   and VerifiablePresentations
+   * - Various signers can be provided, so you can
+   *   verify objects (VerifiablePresentations &
+   *   VerifiableCredentials and ChallengeRequests)
+   *   which were signed with different algorithms.
+   * - The HttpService is responsible for GETting and
+   *   POSTing payloads to the provided endpoints.
+   * - The AddressHelper and VerifiableCredentialHelper
+   *   act as bridges to the data layer for retrieving
+   *   and saving data.
+   *
+   * The CryptUtil you provide will only be used to
+   * create default objects which are not overridden.
+   * If you don't deviate from the default protocol,
+   * you don't have to provide any overrides.
+   *
+   * @param {CryptUtil} _cryptUtil
+   * @param {number} _accountIdParam
+   * @param _overrides
    */
   public constructor (
-    private _vpGenerator: VerifiablePresentationGenerator,
-    private _vpSigners: VerifiablePresentationSigner[],
-    private _challengeRequestSigners: ChallengeRequestSigner[],
-    private _httpService: HttpService,
-    private _vcHelper: VerifiableCredentialHelper,
-    private _addressHelper: AddressHelper,
-    private _accountId: number
+    private _cryptUtil: CryptUtil,
+    private _accountIdParam?: number,
+    private _overrides?: {
+      vpGenerator?: VerifiablePresentationGenerator,
+      vpSigners?: VerifiablePresentationSigner[],
+      challengeRequestSigners?: ChallengeRequestSigner[],
+      httpService?: HttpService,
+      addressHelper?: AddressHelper
+      vcHelper?: VerifiableCredentialHelper
+    }
   ) {
+    this._accountId = _accountIdParam || 0
+    // For each object either use override or, if not defined, a new default value
+    this._vpGenerator = _overrides && _overrides.vpGenerator ? _overrides.vpGenerator
+      : new VerifiablePresentationGenerator(
+        new VerifiablePresentationSigner(this._cryptUtil, new VerifiableCredentialSigner(this._cryptUtil))
+      )
+    this._vpSigners = _overrides && _overrides.vpSigners ? _overrides.vpSigners
+      : [new VerifiablePresentationSigner(this._cryptUtil, new VerifiableCredentialSigner(this._cryptUtil))]
+    this._challengeRequestSigners = _overrides && _overrides.challengeRequestSigners
+      ? _overrides.challengeRequestSigners
+      : [new ChallengeRequestSigner(this._cryptUtil)]
+    this._httpService = _overrides && _overrides.httpService ? _overrides.httpService
+      : new BrowserHttpService()
+    this._addressHelper = _overrides && _overrides.addressHelper ? _overrides.addressHelper
+      : new AddressHelper(this._cryptUtil)
+    this._vcHelper = _overrides && _overrides.vcHelper ? _overrides.vcHelper
+      : new VerifiableCredentialHelper(
+        new VerifiableCredentialGenerator(new VerifiableCredentialSigner(this._cryptUtil)),
+        this._addressHelper
+      )
   }
 
   /**
