@@ -37,10 +37,24 @@ describe('vp controller requestData, name and initialize', function () {
   const httpService = new BrowserHttpService()
   const addressHelper = new AddressHelper(cryptUtil)
   const vcHelper = new VerifiableCredentialHelper(vcGenerator, addressHelper)
-  let sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+  let sut = new VpController(cryptUtil, accountId, {
+    vpGenerator,
+    vpSigners: [vpSigner],
+    challengeRequestSigners: [crSigner],
+    httpService,
+    addressHelper,
+    vcHelper
+  })
 
   afterEach(() => {
-    sut = new VpController(vpGenerator, [vpSigner], [crSigner], httpService, vcHelper, addressHelper, accountId)
+    sut = new VpController(cryptUtil, accountId, {
+      vpGenerator,
+      vpSigners: [vpSigner],
+      challengeRequestSigners: [crSigner],
+      httpService,
+      addressHelper,
+      vcHelper
+    })
   })
 
   it('should return a hardcoded name', () => {
@@ -60,5 +74,15 @@ describe('vp controller requestData, name and initialize', function () {
       sut.initialize(eventHandler)
     }
     assert.doesNotThrow(initAction)
+  })
+
+  it('should create new default values when not provided in constructor', () => {
+    sut = new VpController(cryptUtil)
+    const crSigners = Reflect.get(sut, '_challengeRequestSigners')
+    const vpSigners = Reflect.get(sut, '_vpSigners')
+    assert.strictEqual(1, crSigners.length)
+    assert.strictEqual(1, vpSigners.length)
+    assert.strictEqual(1, Reflect.get(sut, '_vpSigners').length)
+    assert.strictEqual(0, sut.accountId)
   })
 })

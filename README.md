@@ -10,60 +10,48 @@ This implementation uses secp256k1 by default. If you want to use a different cr
 
 ## Installation
 
-If you work with QR codes, please read the instructions in the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) repository.
-Also, in order to save credentials properly, we advise to install the [ula-vc-data-management](https://github.com/rabobank-blockchain/ula-vc-data-management) plugin as well.
+**If you work with QR codes, please read the instructions in the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) repository.
+Also, in order to save credentials properly, we advise to install the [ula-vc-data-management](https://github.com/rabobank-blockchain/ula-vc-data-management) plugin.**
 
-In an existing project (with `package.json`), install the plugin by running the following commands:
+In an existing project (with `package.json`), install the ULA and this plugin by running the following commands:
 
 ```bash
 npm install universal-ledger-agent --save
 npm install crypt-util --save
-npm install vp-toolkit --save
-npm install ula-vp-controller-plugin --save
+npm install ula-vp-controller --save
 ```
 
-## Usage
-
-This is an example of enabling this plugin in the ULA in a browser environment.
+Then setup this plugin and enable the ULA.
 
 ```typescript
-import { BrowserHttpService, EventHandler } from "universal-ledger-agent";
+import { EventHandler } from "universal-ledger-agent";
 import { VpController } from "ula-vp-controller";
 import { LocalCryptUtils } from "crypt-util";
-import {
-  VerifiableCredentialGenerator,
-  VerifiableCredentialSigner,
-  VerifiablePresentationGenerator,
-  VerifiablePresentationSigner
-} from "vp-toolkit";
 
-// Prepare plugin dependencies
-const browserHttpService = new BrowserHttpService()
+// You need to provide a CryptUtil object in order to sign and verify objects
+const yourPrivateMasterKey = 'xprv9s21ZrQH143K4Hahxy3chUqrrHbCynU5CcnRg9xijCvCG4f3AJb1PgiaXpjik6pDnT1qRmf3V3rzn26UNMWDjfEpUKL4ouy6t5ZVa4GAJVG'
 const cryptUtil = new LocalCryptUtils()
-const vcSigner = new VerifiableCredentialSigner(cryptUtil)
-const vcGenerator = new VerifiableCredentialGenerator(vcSigner)
-const vpSigner = new VerifiablePresentationSigner(cryptUtil)
-const vpGenerator = new VerifiablePresentationGenerator(vpSigner)
+cryptUtil.importMasterPrivateKey(yourPrivateMasterKey)
+
 // Instantiate the plugin
-const vpControllerPlugin = new VpController(cryptUtil, vcGenerator, vpGenerator, browserHttpService)
+const vpControllerPlugin = new VpController(cryptUtil)
 
 // Setup the ULA and inject the plugin
 const ulaEventHandler = new EventHandler([vpControllerPlugin /*, other ULA plugins here */])
 ```
 
-### Trigger
-
-#### Using an existing ULA plugin
-Add the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) plugin to receive input from that plugin and you're set to go!
+### Usage
+#### Trigger using an existing ULA plugin
+Add the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) plugin to automatically trigger this plugin!
 
 #### Manually
-However, if you want to invoke this plugin manually, send a ULA message with this format:
+If you want to invoke this plugin manually, send a ULA message with this format:
 
 ```typescript
 const msg = {
   type: 'process-challengerequest',
   endpoint: '{endpoint from QR code}',
-  msg: { /* IChallengeRequestParamsfields */
+  msg: { /* IChallengeRequestParams fields */
     toVerify: [{predicate: "{schema.org URL}", allowedIssuers: ["did:eth:allowedIssuer"]}, {predicate: "{schema.org URL}"}],
     toAttest: [{predicate: "{schema.org URL}"}, {predicate: "{schema.org URL}"}],
     postEndpoint: '{endpoint URL}', // The holder will post a VerifiablePresentation object here
@@ -77,13 +65,14 @@ ulaEventHandler.processMsg(msg, (response: UlaResponse) => {
   // If statuscode is 1, update the UI
 })
 ```
-The `msg` property contains a [ChallengeRequest](https://github.com/rabobank-blockchain/vp-toolkit-models/blob/master/src/model/challenge-request.ts) object. Generate a ChallengeRequest object by using the [vp-toolkit](https://github.com/rabobank-blockchain/vp-toolkit) library.
+The `msg` property contains fields defined in the [IChallengeRequestParams](https://github.com/rabobank-blockchain/vp-toolkit-models/blob/8345a16bab8c1ec46d41077d9e37100f7a9e1369/src/model/challenge-request.ts#L52) interface.
+You can generate a signed `ChallengeRequest` object by using the [vp-toolkit](https://github.com/rabobank-blockchain/vp-toolkit) library, then flatten it using `challengeRequest.toJson()` and put all the flattened fields into `msg`.
 
 Note: `toVerify` and `toAttest` fields are optional. You can use both at the same time or omit one of them. If you omit both fields, the plugin will complete without sending any visual feedback.
 
 ### Callbacks
 
-When the plugin has finished, the callback function will be called twice.
+When the plugin has finished, the callback function will be called **twice**.
 The first time for updating the user interface and the second time for passing operation details (in this case, only a status code).
 
 In case of a successful situation:
