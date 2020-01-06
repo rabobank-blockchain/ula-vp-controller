@@ -5,7 +5,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/c3583b99edad5c48168e/maintainability)](https://codeclimate.com/github/rabobank-blockchain/ula-vp-controller/maintainability)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
-This Holder [ULA](https://github.com/rabobank-blockchain/universal-ledger-agent) plugin responds to an incoming [ChallengeRequest](https://github.com/rabobank-blockchain/vp-toolkit-models/blob/master/src/model/challenge-request.ts) from the issuer and/or verifier.
+This Holder [ULA](https://github.com/rabobank-blockchain/universal-ledger-agent) plugin responds to an incoming [ChallengeRequest](https://github.com/rabobank-blockchain/vp-toolkit-models/blob/master/src/model/challenge-request.ts) from the issuer and/or verifier and is responsible for the exchange of credentials.
 This implementation uses secp256k1 by default. If you want to use a different cryptographic algorithm, then provide your own [crypt-util](https://github.com/rabobank-blockchain/crypt-util) instance.
 
 ## Installation
@@ -51,53 +51,52 @@ const vpControllerPlugin = new VpController(cryptUtil, vcGenerator, vpGenerator,
 const ulaEventHandler = new EventHandler([vpControllerPlugin /*, other ULA plugins here */])
 ```
 
-### Trigger
+### Invoke this plugin
 
-#### Using an existing ULA plugin
 Add the [ula-process-eth-barcode](https://github.com/rabobank-blockchain/ula-process-eth-barcode) plugin to receive input from that plugin and you're set to go!
 
-#### Manually
-However, if you want to invoke this plugin manually, send a ULA message with this format:
+If you wish to invoke this plugin manually, [please continue reading here](docs/manual-invoke.md).
 
+### Callback to your app
+
+Whenever you send your first ULA message, you need to provide a `callback` argument.
+This plugin will use the callback argument in three scenario's which you need to handle in your app:
+
+- Asking for consent
+- Receiving new credentials
+- An Error occurred
+
+Please use the example below (which uses the `ula-process-eth-barcode` plugin) in your app. For specific 
 ```typescript
-const msg = {
-  type: 'process-challengerequest',
-  endpoint: '{endpoint from QR code}',
-  msg: { /* IChallengeRequestParamsfields */
-    toVerify: [{predicate: "{schema.org URL}", allowedIssuers: ["did:eth:allowedIssuer"]}, {predicate: "{schema.org URL}"}],
-    toAttest: [{predicate: "{schema.org URL}"}, {predicate: "{schema.org URL}"}],
-    postEndpoint: '{endpoint URL}', // The holder will post a VerifiablePresentation object here
-    proof: { /* Proof object */ },
-    nonce: "{uuid}"
-  }
+import { UlaResponse } from "universal-ledger-agent"
+
+const qrCodeContents = {
+  type: 'ethereum-qr',
+  url: '{endpoint}'
 }
-
-ulaEventHandler.processMsg(msg, (response: UlaResponse) => {
-  // Handle callback
-  // If statuscode is 1, update the UI
-})
-```
-The `msg` property contains a [ChallengeRequest](https://github.com/rabobank-blockchain/vp-toolkit-models/blob/master/src/model/challenge-request.ts) object. Generate a ChallengeRequest object by using the [vp-toolkit](https://github.com/rabobank-blockchain/vp-toolkit) library.
-
-Note: `toVerify` and `toAttest` fields are optional. You can use both at the same time or omit one of them. If you omit both fields, the plugin will complete without sending any visual feedback.
-
-### Callbacks
-
-When the plugin has finished, the callback function will be called twice.
-The first time for updating the user interface and the second time for passing operation details (in this case, only a status code).
-
-In case of a successful situation:
-```typescript
-// Dont show loading screen, show success screen
-callback(new UlaResponse({ statusCode: 1, body: { loading: false, success: true, failure: false } }))
-callback(new UlaResponse({ statusCode: 201, body: {} })) // Everything went OK
-```
-
-In case of an error:
-```typescript
-// Don't show loading screen, but show failure screen
-callback(new UlaResponse({ statusCode: 1, body: { loading: false, success: false, failure: true } }))
-callback(new UlaResponse({ statusCode: 204, body: {} })) // No information available
+ulaEventHandler.processMsg(qrCodeContents, (callbackData: UlaResponse) => {
+  switch(callbackData.statusCode){
+    case 200: // Ask the user for consent
+      if (yourUI.askUserConsent(callbackData.body.attestationsToConfirm, callbackData.body.missingAttestations)) {
+        // Received consent, continue the flow
+        ulaEventHandler.processMsg({
+        type: 'accept-consent',
+        challengeRequest: callbackData.body.challengeRequest,
+        verifiablePresentation: callbackData.body.verifiablePresentation
+        }, (callbackData: UlaResponse) => {
+          // Listen to case 201 to get a confirmation of the exchange
+          // Listen to case 500 to catch any errors whilst sharing the credential(s)
+        })
+      }
+      // More info on the body structure, see docs/callback-data.md
+      break;
+    case 201: // Received new VerifiableCredentials
+      yourUI.showSuccessMessage()
+      break;
+    case 500: // Error occurred
+      throw callbackData.body.error
+  }
+});
 ```
 
 ## Running tests
