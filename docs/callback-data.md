@@ -32,8 +32,9 @@ const ulaResponse =
 }
 ```
 We advise you to translate the `predicate` to a human-readable text.
-If `confirmAttestations` is empty, it means that there are no matching VerifiableCredentials found.
+If `attestationsToConfirm` is empty, it means that there are no matching VerifiableCredentials found.
 The `missingAttestations` array gives you more context about the request could not be fulfilled for a specific datapoint (predicate).
+`challengeRequest` and `verifiablePresentation` needs to be passed to the next ULA message after the user gives consent.
 
 ### Missing attestation codes
 - **`missing`**: The `predicate` does not appear in any locally stored VerifiableCredentials
