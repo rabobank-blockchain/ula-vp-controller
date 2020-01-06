@@ -1,10 +1,23 @@
 # Callback data structure (v0.1 & v0.2)
 Whenever you call the ULA using it's `processMsg()` function, you need to provide a callback function.
-This plugin will use that callback function to inform your app in three cases:
+This plugin will use that callback function to inform your app in three cases described below.
+The callback data is always of type `UlaResponse`
 
 ## Asking for consent
 ```typescript
-// UlaResponse object with the following structure:
+// Your callback function will be called TWICE.
+// The first call is to inform your UI:
+const ulaResponse =
+{
+  statuscode: 1, // 1 stands for update UI
+  body: {    
+    // Everything false means that user input is requested
+    loading: false,
+    success: false,
+    failure: false
+  }
+}
+// The second is the data to be shown in your app:
 const ulaResponse =
 {
   statuscode: 200,
@@ -14,7 +27,7 @@ const ulaResponse =
       {
           key: 'predicateName', // Without https://schema.org/x/.../
           value: 'theValue',
-          attestor: 'issuerName' // Originating from the verifiableCredential.issuerName field
+          attestor: 'issuerName' // Originating from the verifiableCredential.issuerName field, assuming it's always defined!
       }
     ],
     missingAttestations: [
@@ -23,7 +36,11 @@ const ulaResponse =
         predicate: 'predicateName', // Without https://schema.org/x/.../
         reason: 'missing-reason-code'
       }
-    ]
+    ],
+    filledTemplate: {
+        challengeRequest: new ChallengeRequest(...), // ChallengeRequest type, required in ULA message after consent
+        verifiablePresentation: new VerifiablePresentation(...) // VerifiablePresentation type, required in ULA message after consent
+    }
   }
 }
 ```
@@ -36,7 +53,18 @@ The `missingAttestations` array gives you more context about the request could n
 
 ## Receiving new credentials
 ```typescript
-// UlaResponse object with the following structure:
+// Your callback function will be called TWICE.
+// The first call is to inform your UI:
+const ulaResponse =
+{
+  statuscode: 1,
+  body: {
+    loading: false,
+    success: true,  // Done
+    failure: false
+  }
+}
+// UlaResponse object conform the following structure:
 const ulaResponse =
 {
   statuscode: 201,
@@ -49,7 +77,18 @@ In order to show the new attestations in your app, please check the usage of the
 
 ## An error occurred
 ```typescript
-// UlaResponse object with the following structure:
+// Your callback function will be called TWICE.
+// The first call is to inform your UI:
+const ulaResponse =
+{
+  statuscode: 1,
+  body: {
+    loading: false,
+    success: false,
+    failure: true   // An error occurred
+  }
+}
+// UlaResponse object conform the following structure:
 const ulaResponse =
 {
   statuscode: 500, // The statuscode always is 500 in case of an error
