@@ -66,7 +66,8 @@ This plugin will use the callback argument in three scenario's which you need to
 - Receiving new credentials
 - An Error occurred
 
-Please use the example below (which uses the `ula-process-eth-barcode` plugin) in your app. For specific 
+Please use the example below (which uses the `ula-process-eth-barcode` plugin) in your app.
+For more details on the callback structures, refer to the [callback data overview](docs/callback-data.md).
 ```typescript
 import { UlaResponse } from "universal-ledger-agent"
 
