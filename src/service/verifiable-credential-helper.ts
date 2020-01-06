@@ -19,6 +19,7 @@ import { EventHandler } from 'universal-ledger-agent'
 import { Address } from 'ula-vc-data-management'
 import { AddressHelper } from './address-helper'
 import { VerifiableCredentialGenerator } from 'vp-toolkit'
+import { VcSearchResult } from '../interface'
 
 export class VerifiableCredentialHelper {
 
@@ -61,10 +62,10 @@ export class VerifiableCredentialHelper {
    *
    * @param {ChallengeRequest} challengeRequest
    * @param  {EventHandler} eventHandler
-   * @return {Promise<VerifiableCredential[]>} the self-attested VC's
+   * @return {Promise<VcSearchResult>} a collection of matching credentials and missing predicates
    */
   public async findVCsForChallengeRequest (challengeRequest: ChallengeRequest, eventHandler: EventHandler):
-    Promise<{ matching: VerifiableCredential[], missing: { predicate: string, reason: string }[] }> {
+    Promise<VcSearchResult> {
     if (challengeRequest.toVerify.length === 0) {
       return {
         matching: [],

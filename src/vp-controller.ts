@@ -24,6 +24,7 @@ import {
 import { ChallengeRequestSigner, VerifiablePresentationGenerator, VerifiablePresentationSigner } from 'vp-toolkit'
 import { VerifiableCredentialHelper } from './service/verifiable-credential-helper'
 import { AddressHelper } from './service/address-helper'
+import { CredentialConsentData, VcSearchResult } from './interface'
 
 /**
  * The VP Controller ULA plugin
@@ -122,23 +123,28 @@ export class VpController implements Plugin {
       return 'ignored' // This message is not intended for us
     }
 
-    if (!message.properties.endpoint || !message.properties.msg) {
-      return 'ignored' // The message type is correct, but endpoint or msg is missing
+    if (!message.properties.msg) {
+      return 'ignored' // The message type is correct, but msg is missing
     }
 
     if (!this._eventHandler) {
-      this.triggerFailure(callback)
-      throw new Error('Plugin not initialized. Did you forget to call initialize() ?')
+      this.triggerFailure('Plugin not initialized. Did you forget to call initialize() ?', callback)
+      return 'error-initialize'
     }
 
     try {
       const challengeRequest = new ChallengeRequest(message.properties.msg)
       // Check if we expect a response containing a VP with issued VC's from the issuer (otherwise it is a verifier)
       const matchingCrSigner = this._challengeRequestSigners.find((crSigner) => crSigner.signatureType === challengeRequest.proof.type)
-      const isValidChallengeRequest = matchingCrSigner ? matchingCrSigner.verifyChallengeRequest(challengeRequest) : false
+      if (!matchingCrSigner) {
+        this.triggerFailure('ChallengeRequest verification failed: The object was signed with an unknown encryption scheme', callback)
+        return 'error-cr'
+      }
+
+      const isValidChallengeRequest = matchingCrSigner.verifyChallengeRequest(challengeRequest)
 
       if (!isValidChallengeRequest) {
-        this.triggerFailure(callback)
+        this.triggerFailure('ChallengeRequest verification failed: The signature is invalid', callback)
         return 'error-cr'
       }
 
@@ -173,43 +179,19 @@ export class VpController implements Plugin {
         : undefined
 
       // Ask for consent
-      const nextMessage = new UlaResponse(
-        {
-          statusCode: 200,
-          body: {
-            confirmAttestations: vcSearchResult.matching.map((vc) => {
-              for (const cs of Object.keys(vc.credentialSubject)) {
-                if (cs !== 'id') {
-                  return {
-                    key: cs.split('/').pop(),
-                    value: vc.credentialSubject[cs],
-                    attestor: vc.additionalFields['issuerName']
-                  }
-                }
-              }
-            }),
-            missingAttestations: vcSearchResult.missing,
-            filledTemplate: {
-              challengeRequest: challengeRequest,
-              verifiablePresentation: selfAttestedVP
-            },
-            url: message.properties.endpoint,
-            type: 'accept-consent'
-          }
-        }
-      ) // Todo: Redesign this message structure
+      const askConsentMessage = this.getConsentUlaResponse(vcSearchResult, challengeRequest, selfAttestedVP)
 
       // If the counterparty requests data (toVerify), show the consent screen
       if (challengeRequest.toVerify.length > 0) {
-        callback(new UlaResponse({ statusCode: 1, body: { loading: false, success: false, failure: false } }))
-        callback(nextMessage)
+        callback(askConsentMessage)
       } else {
-        nextMessage.body.payload = nextMessage.body.filledTemplate
-        return this.handleConsent(new Message(nextMessage.body), callback)
+        // Otherwise, continue the workflow without explicit consent
+        askConsentMessage.body.type = 'accept-consent' // Type field in ULA message is required but not used here
+        return this.handleConsent(new Message(askConsentMessage.body), callback)
       }
 
     } catch (error) {
-      this.triggerFailure(callback)
+      this.triggerFailure(error.message, callback)
       return 'error'
     }
 
@@ -218,8 +200,8 @@ export class VpController implements Plugin {
 
   private async handleConsent (message: Message, callback: any): Promise<string> {
     // Send challengeresponse (VP) and process the response from the endpoint
-    const challengeRequest = message.properties.payload.challengeRequest as ChallengeRequest
-    const selfAttestedVP = message.properties.payload.verifiablePresentation as VerifiablePresentation
+    const challengeRequest = message.properties.challengeRequest as ChallengeRequest
+    const selfAttestedVP = message.properties.verifiablePresentation as VerifiablePresentation
     const response = await this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
     let issuedCredentials: VerifiableCredential[] = []
 
@@ -228,12 +210,12 @@ export class VpController implements Plugin {
       const vp = new VerifiablePresentation(response as IVerifiablePresentationParams)
       issuedCredentials = vp.verifiableCredential
       const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
-      const vpIsValidVp = matchingVpSigner
+      const isValidVp = matchingVpSigner
         ? matchingVpSigner.verifyVerifiablePresentation(vp, true)
         : this._vpSigners[0].verifyVerifiablePresentation(vp, true)
 
-      if (!vpIsValidVp) {
-        this.triggerFailure(callback)
+      if (!isValidVp) {
+        this.triggerFailure('The VerifiablePresentation from the issuer is invalid', callback)
         return 'error-vp'
       }
     }
@@ -247,16 +229,43 @@ export class VpController implements Plugin {
       this._eventHandler
     )
 
-    callback(new UlaResponse({ statusCode: 1, body: { loading: false, success: true, failure: false } }))
     callback(new UlaResponse({ statusCode: 201, body: {} }))
 
     return 'success'
   }
 
-  private triggerFailure (callback: any) {
-    if (callback) {
-      callback(new UlaResponse({ statusCode: 1, body: { loading: false, success: false, failure: true } }))
-      callback(new UlaResponse({ statusCode: 204, body: {} }))
+  private triggerFailure (errorMessage: string, callback: any) {
+    callback(new UlaResponse({ statusCode: 500, body: { error: new Error(errorMessage) } }))
+  }
+
+  private extractCredentialDataFromSearchResult (vcSearchResult: VcSearchResult): CredentialConsentData[] {
+    const data = []
+    for (const vc of vcSearchResult.matching) {
+      for (const cs of Object.keys(vc.credentialSubject)) {
+        if (cs !== 'id') {
+          data.push({
+            // Todo: Add fields 'isRequired' and 'processingPurpose' (GDPR)
+            predicate: cs,
+            value: vc.credentialSubject[cs],
+            issuer: vc.issuer
+          })
+        }
+      }
     }
+    return data
+  }
+
+  private getConsentUlaResponse (vcSearchResult: VcSearchResult, challengeRequest: ChallengeRequest, selfAttestedVP?: VerifiablePresentation) {
+    return new UlaResponse(
+      {
+        statusCode: 200,
+        body: {
+          attestationsToConfirm: this.extractCredentialDataFromSearchResult(vcSearchResult),
+          missingAttestations: vcSearchResult.missing,
+          challengeRequest: challengeRequest,
+          verifiablePresentation: selfAttestedVP
+        }
+      }
+    )
   }
 }
