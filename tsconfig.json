@@ -10,7 +10,10 @@
     "typeRoots": ["node_modules/@types"],
     "target": "es6",
     "lib": ["es2016", "dom"],
-    "rootDir": "src",
+    "rootDirs": [
+      "src",
+      "test"
+    ],
     "outDir": "dist",
     "types": [
       "mocha"
