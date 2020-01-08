@@ -1,6 +1,6 @@
 #0.2.1 / 08-01-2020
 
-**Enhancements:**
+**Enhancements**
 - Updated all dependencies
 - Introduced [HISTORY.md](HISTORY.md)
 
