@@ -1,6 +1,22 @@
+/*
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 "use strict";
 /*
- *  Copyright 2019 Coöperatieve Rabobank U.A.
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -196,9 +212,9 @@ class VpController {
         return __awaiter(this, void 0, void 0, function* () {
             // Send challengeresponse (VP) and process the response from the endpoint
             const challengeRequest = message.properties.payload.challengeRequest;
-            const selfAttestedVP = message.properties.payload.verifiablePresentation;
-          const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
-            let issuedCredentials = [];
+            const selfAttestedVP = message.properties.payload.verifiablePresentation
+            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
+            let issuedCredentials = []
             // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
             if (challengeRequest.toAttest.length > 0) {
                 const vp = new vp_toolkit_models_1.VerifiablePresentation(response);
@@ -213,9 +229,9 @@ class VpController {
                 }
             }
             // Save the VC's coming from the issuer
-          yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
-            // @ts-ignore
-            this._eventHandler);
+            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
+              // @ts-ignore
+              this._eventHandler)
             callback(new universal_ledger_agent_1.UlaResponse({ statusCode: 1, body: { loading: false, success: true, failure: false } }));
             callback(new universal_ledger_agent_1.UlaResponse({ statusCode: 201, body: {} }));
             return 'success';
