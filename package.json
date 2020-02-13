@@ -1,6 +1,6 @@
 {
   "name": "ula-vp-controller",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A plugin responding to a ChallengeRequest by returning a VerifiablePresentation",
   "engines": {
     "node": ">=8.15.0",
