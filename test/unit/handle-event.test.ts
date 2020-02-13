@@ -99,9 +99,7 @@ describe('vp controller handle event', function () {
   it('should always return "ignored" when the message type does not match', () => {
     const wrongMessage = new Message({ type: 'did:any:address', msg: {} })
     sut.initialize(new EventHandler([]))
-
     const handleEventCall = sut.handleEvent(wrongMessage, undefined)
-
     return handleEventCall.should.eventually.equal('ignored')
   })
 
