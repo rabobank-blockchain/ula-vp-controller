@@ -1,3 +1,8 @@
+#0.2.2 / 13-02-2020
+
+**Bigfixes**
+- When omitting the deprecated `msg.endpoint` field, the flow still exits prematurely ([#16](https://github.com/rabobank-blockchain/ula-vp-controller/issues/16))
+
 #0.2.1 / 08-01-2020
 
 **Enhancements**
