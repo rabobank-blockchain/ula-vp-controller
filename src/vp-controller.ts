@@ -122,7 +122,7 @@ export class VpController implements Plugin {
       return 'ignored' // This message is not intended for us
     }
 
-    if (!message.properties.endpoint || !message.properties.msg) {
+    if (!message.properties.msg) {
       return 'ignored' // The message type is correct, but endpoint or msg is missing
     }
 
@@ -193,7 +193,7 @@ export class VpController implements Plugin {
               challengeRequest: challengeRequest,
               verifiablePresentation: selfAttestedVP
             },
-            url: message.properties.endpoint,
+            url: challengeRequest.postEndpoint,
             type: 'accept-consent'
           }
         }
