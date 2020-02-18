@@ -1,6 +1,6 @@
 {
   "name": "ula-vp-controller",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A plugin responding to a ChallengeRequest by returning a VerifiablePresentation",
   "engines": {
     "node": ">=8.15.0",
@@ -67,7 +67,7 @@
     "ts-node": "^8.5.4",
     "tslint": "^5.20.1",
     "tslint-config-standard": "^9.0.0",
-    "typescript": "^3.7.4"
+    "typescript": "^3.4.5"
   },
   "dependencies": {
     "ula-vc-data-management": "^0.1.0",
