@@ -72,7 +72,7 @@
   "dependencies": {
     "ula-vc-data-management": "^0.1.0",
     "universal-ledger-agent": "^0.1.1",
-    "vp-toolkit": "^0.2.0",
+    "vp-toolkit": "^0.2.2",
     "vp-toolkit-models": "^0.2.0"
   }
 }
