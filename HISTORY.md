@@ -1,6 +1,11 @@
+# 0.2.3 / 10-03-2020
+
+**Security fixes**
+- Updated to `vp-toolkit@0.2.2` due to two Verifier vulnerabilities (not applicable here)
+
 # 0.2.2 / 13-02-2020
 
-**Bigfixes**
+**Bugfixes**
 - When omitting the deprecated `msg.endpoint` field, the flow still exits prematurely ([#16](https://github.com/rabobank-blockchain/ula-vp-controller/issues/16))
 
 # 0.2.1 / 08-01-2020

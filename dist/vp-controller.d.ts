@@ -26,23 +26,40 @@ import { AddressHelper } from './service/address-helper'
  * the correct dependencies.
  */
 export declare class VpController implements Plugin {
+  /**
+   * The name of the plugin
+   * @return {string}
+   */
+  readonly name: string
+  /**
+   * The current wallet/profile ID
+   * @return {number}
+   */
+  /**
+   * When the user switches to a different
+   * wallet/profile, update the accountId
+   * to make sure the correct keys are
+   * generated and used.
+   */
+  accountId: number
+  private _challengeRequestSigners
+  private _httpService
+  private _vcHelper
+  private _addressHelper
+  private _accountId
+  private _eventHandler?
   private _vpGenerator
   private _vpSigners
-    private _challengeRequestSigners;
-    private _httpService;
-    private _vcHelper;
-    private _addressHelper;
-    private _accountId;
-    private _eventHandler?;
-    /**
-     * Provide the generators you want to use
-     * in order to generate VerifiableCredentials
-     * and VerifiablePresentations.
-     *
-     * Multiple signers for one class can be provided,
-     * so you can verify objects which were signed with
-     * different algorithms. If the VerifiablePresentation
-     * from the issuer does not contain any proofs, the
+
+  /**
+   * Provide the generators you want to use
+   * in order to generate VerifiableCredentials
+   * and VerifiablePresentations.
+   *
+   * Multiple signers for one class can be provided,
+   * so you can verify objects which were signed with
+   * different algorithms. If the VerifiablePresentation
+   * from the issuer does not contain any proofs, the
      * first given VerifiablePresentationSigner will be
      * used. Create your own signer by overriding the
      * existing signer class.
@@ -51,36 +68,17 @@ export declare class VpController implements Plugin {
      * identifier the current user is utilizing.
      * If your wallet implementation does not provide
      * multiple wallets/profiles, then you can
-     * provide 0 as accountId value.
-     *
-     * @param {VerifiablePresentationGenerator} _vpGenerator
-     * @param {VerifiablePresentationSigner[]} _vpSigners
-     * @param {ChallengeRequestSigner[]} _challengeRequestSigners
-     * @param {HttpService} _httpService
-     * @param {VerifiableCredentialHelper} _vcHelper
-     * @param {AddressHelper} _addressHelper
-     * @param {number} _accountId
-     */
-    constructor (_vpGenerator: VerifiablePresentationGenerator, _vpSigners: VerifiablePresentationSigner[], _challengeRequestSigners: ChallengeRequestSigner[], _httpService: HttpService, _vcHelper: VerifiableCredentialHelper, _addressHelper: AddressHelper, _accountId: number);
-
-  /**
-   * The name of the plugin
-   * @return {string}
+   * provide 0 as accountId value.
+   *
+   * @param {VerifiablePresentationGenerator} _vpGenerator
+   * @param {VerifiablePresentationSigner[]} _vpSigners
+   * @param {ChallengeRequestSigner[]} _challengeRequestSigners
+   * @param {HttpService} _httpService
+   * @param {VerifiableCredentialHelper} _vcHelper
+   * @param {AddressHelper} _addressHelper
+   * @param {number} _accountId
    */
-  get name (): string;
-
-  /**
-   * The current wallet/profile ID
-   * @return {number}
-   */
-  get accountId (): number;
-  /**
-   * When the user switches to a different
-   * wallet/profile, update the accountId
-   * to make sure the correct keys are
-   * generated and used.
-   */
-  set accountId (id: number);
+  constructor (_vpGenerator: VerifiablePresentationGenerator, _vpSigners: VerifiablePresentationSigner[], _challengeRequestSigners: ChallengeRequestSigner[], _httpService: HttpService, _vcHelper: VerifiableCredentialHelper, _addressHelper: AddressHelper, _accountId: number);
 
   /**
    * Receive the eventHandler so we can put messages
@@ -88,13 +86,15 @@ export declare class VpController implements Plugin {
    * @param {EventHandler} eventHandler
    */
   initialize (eventHandler: EventHandler): void;
-    /**
-     * Handle incoming messages
-     * @param {Message} message
-     * @param callback
-     * @return {Promise<string>}
-     */
-    handleEvent(message: Message, callback: any): Promise<string>;
-    private handleConsent;
-    private triggerFailure;
+
+  /**
+   * Handle incoming messages
+   * @param {Message} message
+   * @param callback
+   * @return {Promise<string>}
+   */
+  handleEvent (message: Message, callback: any): Promise<string>;
+
+  private handleConsent
+  private triggerFailure
 }

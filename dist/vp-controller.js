@@ -31,26 +31,30 @@
  *  limitations under the License.
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) {
-      return value instanceof P ? value : new P(function (resolve) {
-        resolve(value)
-      })
-    }
     return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-
-      function rejected(value) {
-        try {
-          step(generator["throw"](value))
-        } catch (e) {
-          reject(e)
+        function fulfilled(value) {
+            try {
+                step(generator.next(value))
+            } catch (e) {
+                reject(e)
+            }
         }
-      }
 
-      function step(result) {
-        result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected)
-      }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        function rejected(value) {
+            try {
+                step(generator["throw"](value))
+            } catch (e) {
+                reject(e)
+            }
+        }
+
+        function step(result) {
+            result.done ? resolve(result.value) : new P(function (resolve) {
+                resolve(result.value)
+            }).then(fulfilled, rejected)
+        }
+
+        step((generator = generator.apply(thisArg, _arguments || [])).next())
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -139,26 +143,26 @@ class VpController {
     handleEvent(message, callback) {
         return __awaiter(this, void 0, void 0, function* () {
             if (message.properties.type.match('accept-consent')) {
-                return this.handleConsent(message, callback);
+                return this.handleConsent(message, callback)
             }
-          if (message.properties.type !== 'process-challengerequest') {
-            return 'ignored' // This message is not intended for us
-          }
-          if (!message.properties.msg) {
-            return 'ignored' // The message type is correct, but endpoint or msg is missing
-          }
-          if (!this._eventHandler) {
-            this.triggerFailure(callback)
-            throw new Error('Plugin not initialized. Did you forget to call initialize() ?')
-          }
+            if (message.properties.type !== 'process-challengerequest') {
+                return 'ignored' // This message is not intended for us
+            }
+            if (!message.properties.msg) {
+                return 'ignored' // The message type is correct, but endpoint or msg is missing
+            }
+            if (!this._eventHandler) {
+                this.triggerFailure(callback)
+                throw new Error('Plugin not initialized. Did you forget to call initialize() ?')
+            }
             try {
-                const challengeRequest = new vp_toolkit_models_1.ChallengeRequest(message.properties.msg);
+                const challengeRequest = new vp_toolkit_models_1.ChallengeRequest(message.properties.msg)
                 // Check if we expect a response containing a VP with issued VC's from the issuer (otherwise it is a verifier)
-                const matchingCrSigner = this._challengeRequestSigners.find((crSigner) => crSigner.signatureType === challengeRequest.proof.type);
-                const isValidChallengeRequest = matchingCrSigner ? matchingCrSigner.verifyChallengeRequest(challengeRequest) : false;
+                const matchingCrSigner = this._challengeRequestSigners.find((crSigner) => crSigner.signatureType === challengeRequest.proof.type)
+                const isValidChallengeRequest = matchingCrSigner ? matchingCrSigner.verifyChallengeRequest(challengeRequest) : false
                 if (!isValidChallengeRequest) {
-                    this.triggerFailure(callback);
-                    return 'error-cr';
+                    this.triggerFailure(callback)
+                    return 'error-cr'
                 }
                 // toAttest process
                 // Receive the DidInfo to create a new proof using the same DID keys
@@ -192,18 +196,18 @@ class VpController {
                                     return {
                                         key: cs.split('/').pop(),
                                         value: vc.credentialSubject[cs],
-                                      attestor: vc.additionalFields['issuerName']
-                                    };
+                                        attestor: vc.additionalFields['issuerName']
+                                    }
                                 }
                             }
                         }),
-                      missingAttestations: vcSearchResult.missing,
-                      filledTemplate: {
-                        challengeRequest: challengeRequest,
-                        verifiablePresentation: selfAttestedVP
-                      },
-                      url: challengeRequest.postEndpoint,
-                      type: 'accept-consent'
+                        missingAttestations: vcSearchResult.missing,
+                        filledTemplate: {
+                            challengeRequest: challengeRequest,
+                            verifiablePresentation: selfAttestedVP
+                        },
+                        url: challengeRequest.postEndpoint,
+                        type: 'accept-consent'
                     }
                 }); // Todo: Redesign this message structure
                 // If the counterparty requests data (toVerify), show the consent screen
@@ -225,34 +229,34 @@ class VpController {
     }
     handleConsent(message, callback) {
         return __awaiter(this, void 0, void 0, function* () {
-          // Send challengeresponse (VP) and process the response from the endpoint
-          const challengeRequest = message.properties.payload.challengeRequest
-          const selfAttestedVP = message.properties.payload.verifiablePresentation
-          const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
-          let issuedCredentials = []
-          // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
-          if (challengeRequest.toAttest.length > 0) {
-            const vp = new vp_toolkit_models_1.VerifiablePresentation(response)
-            issuedCredentials = vp.verifiableCredential
-            const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
-            const vpIsValidVp = matchingVpSigner
-              ? matchingVpSigner.verifyVerifiablePresentation(vp, true)
-              : this._vpSigners[0].verifyVerifiablePresentation(vp, true)
-            if (!vpIsValidVp) {
-              this.triggerFailure(callback)
-              return 'error-vp'
+            // Send challengeresponse (VP) and process the response from the endpoint
+            const challengeRequest = message.properties.payload.challengeRequest
+            const selfAttestedVP = message.properties.payload.verifiablePresentation
+            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
+            let issuedCredentials = []
+            // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
+            if (challengeRequest.toAttest.length > 0) {
+                const vp = new vp_toolkit_models_1.VerifiablePresentation(response)
+                issuedCredentials = vp.verifiableCredential
+                const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
+                const vpIsValidVp = matchingVpSigner
+                  ? matchingVpSigner.verifyVerifiablePresentation(vp, true)
+                  : this._vpSigners[0].verifyVerifiablePresentation(vp, true)
+                if (!vpIsValidVp) {
+                    this.triggerFailure(callback)
+                    return 'error-vp'
+                }
             }
-          }
-          // Save the VC's coming from the issuer
-          yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
-            // @ts-ignore
-            this._eventHandler)
-          callback(new universal_ledger_agent_1.UlaResponse({
-            statusCode: 1,
-            body: {loading: false, success: true, failure: false}
-          }))
-          callback(new universal_ledger_agent_1.UlaResponse({statusCode: 201, body: {}}))
-          return 'success'
+            // Save the VC's coming from the issuer
+            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
+              // @ts-ignore
+              this._eventHandler)
+            callback(new universal_ledger_agent_1.UlaResponse({
+                statusCode: 1,
+                body: {loading: false, success: true, failure: false}
+            }))
+            callback(new universal_ledger_agent_1.UlaResponse({statusCode: 201, body: {}}))
+            return 'success'
         });
     }
     triggerFailure(callback) {
