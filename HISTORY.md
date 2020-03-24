@@ -1,3 +1,11 @@
+# 0.2.4 / 24-03-2020
+
+**Enhancements**
+- Add `sessionId` in the generated VP ([#25](https://github.com/rabobank-blockchain/ula-vp-controller/issues/25))
+- Add predicate in self-attested VC ([#24](https://github.com/rabobank-blockchain/ula-vp-controller/issues/24))
+- Updated dependencies
+- Rollback Typescript to 3.4.5 to output proper `d.ts` files
+
 # 0.2.3 / 10-03-2020
 
 **Security fixes**
