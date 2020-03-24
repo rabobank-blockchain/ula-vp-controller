@@ -621,10 +621,11 @@ describe('vp controller handle event', function () {
     }
 
     // Holder (VP, requesting consent to app)
-    let selfSignedVpWithoutProof: IVerifiablePresentationParams = {
+    let selfSignedVpWithoutProof = {
       type: ['VerifiablePresentation', 'ChallengeResponse'],
-      verifiableCredential: [selfSignedVcWithProof.vc, issuerVcWithProof]
-    }
+      verifiableCredential: [selfSignedVcWithProof.vc, issuerVcWithProof],
+      sessionId: issueAndVerifyCRParams.correspondenceId
+    } as IVerifiablePresentationParams
     let selfSignedVpWithProof = new VerifiablePresentation(
       Object.assign({ proof: [testProof] }, selfSignedVpWithoutProof)
     )

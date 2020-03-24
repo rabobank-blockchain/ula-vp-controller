@@ -165,8 +165,9 @@ export class VpController implements Plugin {
         this._vpGenerator.generateVerifiablePresentation(
           {
             type: ['VerifiablePresentation', 'ChallengeResponse'],
-            verifiableCredential: allFoundCredentials
-          },
+            verifiableCredential: allFoundCredentials,
+            sessionId: challengeRequest.correspondenceId
+          } as IVerifiablePresentationParams,
           selfAttestedDidInfo.concat(existingVcDidInfo),
           challengeRequest.correspondenceId
         )
