@@ -78,11 +78,14 @@ class VerifiableCredentialHelper {
                 const addressDetails = yield this._addressHelper.generateAndSaveAddressDetails(accountId, toAttest.predicate, eventHandler);
                 const did = 'did:eth:' + addressDetails.address;
                 const selfAttestedVc = this._vcGenerator.generateVerifiableCredential({
-                    type: ['VerifiableCredential', 'DidOwnership'],
-                    credentialSubject: {},
-                    '@context': [toAttest.predicate],
-                    issuanceDate: new Date(),
-                    issuer: did
+                  type: ['VerifiableCredential', 'DidOwnership'],
+                  credentialSubject: {
+                    id: did,
+                    predicate: toAttest.predicate
+                  },
+                  '@context': [toAttest.predicate],
+                  issuanceDate: new Date(),
+                  issuer: did
                 }, accountId, addressDetails.keyId);
                 verifiableCredentials.push({ accountId: accountId, keyId: addressDetails.keyId, vc: selfAttestedVc });
             }
