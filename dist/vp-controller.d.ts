@@ -42,14 +42,16 @@ export declare class VpController implements Plugin {
    * generated and used.
    */
   accountId: number
+  private _vpGenerator
+  private _vpSigners
   private _challengeRequestSigners
   private _httpService
   private _vcHelper
   private _addressHelper
   private _accountId
   private _eventHandler?
-  private _vpGenerator
-  private _vpSigners
+  private handleConsent
+  private triggerFailure
 
   /**
    * Provide the generators you want to use
@@ -60,14 +62,14 @@ export declare class VpController implements Plugin {
    * so you can verify objects which were signed with
    * different algorithms. If the VerifiablePresentation
    * from the issuer does not contain any proofs, the
-     * first given VerifiablePresentationSigner will be
-     * used. Create your own signer by overriding the
-     * existing signer class.
-     *
-     * The account ID is the 'wallet' or 'profile'
-     * identifier the current user is utilizing.
-     * If your wallet implementation does not provide
-     * multiple wallets/profiles, then you can
+   * first given VerifiablePresentationSigner will be
+   * used. Create your own signer by overriding the
+   * existing signer class.
+   *
+   * The account ID is the 'wallet' or 'profile'
+   * identifier the current user is utilizing.
+   * If your wallet implementation does not provide
+   * multiple wallets/profiles, then you can
    * provide 0 as accountId value.
    *
    * @param {VerifiablePresentationGenerator} _vpGenerator
@@ -94,7 +96,4 @@ export declare class VpController implements Plugin {
    * @return {Promise<string>}
    */
   handleEvent (message: Message, callback: any): Promise<string>;
-
-  private handleConsent
-  private triggerFailure
 }

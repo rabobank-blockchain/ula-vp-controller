@@ -166,10 +166,10 @@ class VpController {
                 }
                 // toAttest process
                 // Receive the DidInfo to create a new proof using the same DID keys
-                const selfAttestedVCsAndDidInfo = yield this._vcHelper.generateSelfAttestedVCs(challengeRequest, this._accountId, this._eventHandler);
-                const selfAttestedVCs = selfAttestedVCsAndDidInfo.map((vcd) => vcd.vc);
+                const selfAttestedVCsAndDidInfo = yield this._vcHelper.generateSelfAttestedVCs(challengeRequest, this._accountId, this._eventHandler)
+                const selfAttestedVCs = selfAttestedVCsAndDidInfo.map((vcd) => vcd.vc)
                 // toVerify process
-                const vcSearchResult = yield this._vcHelper.findVCsForChallengeRequest(challengeRequest, this._eventHandler);
+                const vcSearchResult = yield this._vcHelper.findVCsForChallengeRequest(challengeRequest, this._eventHandler)
                 const existingVcAddresses = yield this._addressHelper.findDidInfoForVCs(vcSearchResult.matching, this._eventHandler);
                 // Transform all DID info so generateVerifiablePresentation can digest it
                 const selfAttestedDidInfo = selfAttestedVCsAndDidInfo.map(info => {
