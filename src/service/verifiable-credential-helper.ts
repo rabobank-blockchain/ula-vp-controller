@@ -41,7 +41,10 @@ export class VerifiableCredentialHelper {
       const did = 'did:eth:' + addressDetails.address
       const selfAttestedVc = this._vcGenerator.generateVerifiableCredential({
         type: ['VerifiableCredential', 'DidOwnership'],
-        credentialSubject: {},
+        credentialSubject: {
+          id: did,
+          predicate: toAttest.predicate
+        },
         '@context': [toAttest.predicate],
         issuanceDate: new Date(),
         issuer: did

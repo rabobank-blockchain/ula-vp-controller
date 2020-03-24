@@ -32,29 +32,29 @@
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) {
-            try {
-                step(generator.next(value))
-            } catch (e) {
-                reject(e)
-            }
+      function fulfilled(value) {
+        try {
+          step(generator.next(value))
+        } catch (e) {
+          reject(e)
         }
+      }
 
-        function rejected(value) {
-            try {
-                step(generator["throw"](value))
-            } catch (e) {
-                reject(e)
-            }
+      function rejected(value) {
+        try {
+          step(generator["throw"](value))
+        } catch (e) {
+          reject(e)
         }
+      }
 
-        function step(result) {
-            result.done ? resolve(result.value) : new P(function (resolve) {
-                resolve(result.value)
-            }).then(fulfilled, rejected)
-        }
+      function step(result) {
+        result.done ? resolve(result.value) : new P(function (resolve) {
+          resolve(result.value)
+        }).then(fulfilled, rejected)
+      }
 
-        step((generator = generator.apply(thisArg, _arguments || [])).next())
+      step((generator = generator.apply(thisArg, _arguments || [])).next())
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -143,47 +143,48 @@ class VpController {
     handleEvent(message, callback) {
         return __awaiter(this, void 0, void 0, function* () {
             if (message.properties.type.match('accept-consent')) {
-                return this.handleConsent(message, callback)
+              return this.handleConsent(message, callback)
             }
             if (message.properties.type !== 'process-challengerequest') {
-                return 'ignored' // This message is not intended for us
+              return 'ignored' // This message is not intended for us
             }
             if (!message.properties.msg) {
-                return 'ignored' // The message type is correct, but endpoint or msg is missing
+              return 'ignored' // The message type is correct, but endpoint or msg is missing
             }
             if (!this._eventHandler) {
-                this.triggerFailure(callback)
-                throw new Error('Plugin not initialized. Did you forget to call initialize() ?')
+              this.triggerFailure(callback)
+              throw new Error('Plugin not initialized. Did you forget to call initialize() ?')
             }
             try {
-                const challengeRequest = new vp_toolkit_models_1.ChallengeRequest(message.properties.msg)
-                // Check if we expect a response containing a VP with issued VC's from the issuer (otherwise it is a verifier)
-                const matchingCrSigner = this._challengeRequestSigners.find((crSigner) => crSigner.signatureType === challengeRequest.proof.type)
-                const isValidChallengeRequest = matchingCrSigner ? matchingCrSigner.verifyChallengeRequest(challengeRequest) : false
-                if (!isValidChallengeRequest) {
-                    this.triggerFailure(callback)
-                    return 'error-cr'
-                }
-                // toAttest process
-                // Receive the DidInfo to create a new proof using the same DID keys
-                const selfAttestedVCsAndDidInfo = yield this._vcHelper.generateSelfAttestedVCs(challengeRequest, this._accountId, this._eventHandler);
-                const selfAttestedVCs = selfAttestedVCsAndDidInfo.map((vcd) => vcd.vc);
-                // toVerify process
-                const vcSearchResult = yield this._vcHelper.findVCsForChallengeRequest(challengeRequest, this._eventHandler);
-                const existingVcAddresses = yield this._addressHelper.findDidInfoForVCs(vcSearchResult.matching, this._eventHandler);
-                // Transform all DID info so generateVerifiablePresentation can digest it
-                const selfAttestedDidInfo = selfAttestedVCsAndDidInfo.map(info => {
-                    return { accountId: info.accountId, keyId: info.keyId };
-                });
-                const existingVcDidInfo = existingVcAddresses.map(addr => {
-                    return { accountId: addr.accountId, keyId: addr.keyId };
-                });
+              const challengeRequest = new vp_toolkit_models_1.ChallengeRequest(message.properties.msg)
+              // Check if we expect a response containing a VP with issued VC's from the issuer (otherwise it is a verifier)
+              const matchingCrSigner = this._challengeRequestSigners.find((crSigner) => crSigner.signatureType === challengeRequest.proof.type)
+              const isValidChallengeRequest = matchingCrSigner ? matchingCrSigner.verifyChallengeRequest(challengeRequest) : false
+              if (!isValidChallengeRequest) {
+                this.triggerFailure(callback)
+                return 'error-cr'
+              }
+              // toAttest process
+              // Receive the DidInfo to create a new proof using the same DID keys
+              const selfAttestedVCsAndDidInfo = yield this._vcHelper.generateSelfAttestedVCs(challengeRequest, this._accountId, this._eventHandler)
+              const selfAttestedVCs = selfAttestedVCsAndDidInfo.map((vcd) => vcd.vc)
+              // toVerify process
+              const vcSearchResult = yield this._vcHelper.findVCsForChallengeRequest(challengeRequest, this._eventHandler)
+              const existingVcAddresses = yield this._addressHelper.findDidInfoForVCs(vcSearchResult.matching, this._eventHandler)
+              // Transform all DID info so generateVerifiablePresentation can digest it
+              const selfAttestedDidInfo = selfAttestedVCsAndDidInfo.map(info => {
+                return {accountId: info.accountId, keyId: info.keyId}
+              })
+              const existingVcDidInfo = existingVcAddresses.map(addr => {
+                return {accountId: addr.accountId, keyId: addr.keyId}
+              })
                 // Prepare the response, but make the VP undefined if there are no credentials found
                 const allFoundCredentials = selfAttestedVCs.concat(vcSearchResult.matching);
                 const selfAttestedVP = allFoundCredentials.length > 0 ?
                     this._vpGenerator.generateVerifiablePresentation({
-                        type: ['VerifiablePresentation', 'ChallengeResponse'],
-                        verifiableCredential: allFoundCredentials
+                      type: ['VerifiablePresentation', 'ChallengeResponse'],
+                      verifiableCredential: allFoundCredentials,
+                      sessionId: challengeRequest.correspondenceId
                     }, selfAttestedDidInfo.concat(existingVcDidInfo), challengeRequest.correspondenceId)
                     : undefined;
                 // Ask for consent
@@ -193,11 +194,11 @@ class VpController {
                         confirmAttestations: vcSearchResult.matching.map((vc) => {
                             for (const cs of Object.keys(vc.credentialSubject)) {
                                 if (cs !== 'id') {
-                                    return {
-                                        key: cs.split('/').pop(),
-                                        value: vc.credentialSubject[cs],
-                                        attestor: vc.additionalFields['issuerName']
-                                    }
+                                  return {
+                                    key: cs.split('/').pop(),
+                                    value: vc.credentialSubject[cs],
+                                    attestor: vc.additionalFields['issuerName']
+                                  }
                                 }
                             }
                         }),
@@ -229,34 +230,34 @@ class VpController {
     }
     handleConsent(message, callback) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Send challengeresponse (VP) and process the response from the endpoint
-            const challengeRequest = message.properties.payload.challengeRequest
-            const selfAttestedVP = message.properties.payload.verifiablePresentation
-            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
-            let issuedCredentials = []
-            // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
-            if (challengeRequest.toAttest.length > 0) {
-                const vp = new vp_toolkit_models_1.VerifiablePresentation(response)
-                issuedCredentials = vp.verifiableCredential
-                const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
-                const vpIsValidVp = matchingVpSigner
-                  ? matchingVpSigner.verifyVerifiablePresentation(vp, true)
-                  : this._vpSigners[0].verifyVerifiablePresentation(vp, true)
-                if (!vpIsValidVp) {
-                    this.triggerFailure(callback)
-                    return 'error-vp'
-                }
+          // Send challengeresponse (VP) and process the response from the endpoint
+          const challengeRequest = message.properties.payload.challengeRequest
+          const selfAttestedVP = message.properties.payload.verifiablePresentation
+          const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
+          let issuedCredentials = []
+          // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
+          if (challengeRequest.toAttest.length > 0) {
+            const vp = new vp_toolkit_models_1.VerifiablePresentation(response)
+            issuedCredentials = vp.verifiableCredential
+            const matchingVpSigner = this._vpSigners.find((vpSigner) => vp.proof.length > 0 && vpSigner.signatureType === vp.proof[0].type)
+            const vpIsValidVp = matchingVpSigner
+              ? matchingVpSigner.verifyVerifiablePresentation(vp, true)
+              : this._vpSigners[0].verifyVerifiablePresentation(vp, true)
+            if (!vpIsValidVp) {
+              this.triggerFailure(callback)
+              return 'error-vp'
             }
-            // Save the VC's coming from the issuer
-            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
-              // @ts-ignore
-              this._eventHandler)
-            callback(new universal_ledger_agent_1.UlaResponse({
-                statusCode: 1,
-                body: {loading: false, success: true, failure: false}
-            }))
-            callback(new universal_ledger_agent_1.UlaResponse({statusCode: 201, body: {}}))
-            return 'success'
+          }
+          // Save the VC's coming from the issuer
+          yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
+            // @ts-ignore
+            this._eventHandler)
+          callback(new universal_ledger_agent_1.UlaResponse({
+            statusCode: 1,
+            body: {loading: false, success: true, failure: false}
+          }))
+          callback(new universal_ledger_agent_1.UlaResponse({statusCode: 201, body: {}}))
+          return 'success'
         });
     }
     triggerFailure(callback) {

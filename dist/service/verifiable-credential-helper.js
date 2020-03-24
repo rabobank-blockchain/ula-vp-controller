@@ -32,29 +32,29 @@
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) {
-            try {
-                step(generator.next(value))
-            } catch (e) {
-                reject(e)
-            }
+      function fulfilled(value) {
+        try {
+          step(generator.next(value))
+        } catch (e) {
+          reject(e)
         }
+      }
 
-        function rejected(value) {
-            try {
-                step(generator["throw"](value))
-            } catch (e) {
-                reject(e)
-            }
+      function rejected(value) {
+        try {
+          step(generator["throw"](value))
+        } catch (e) {
+          reject(e)
         }
+      }
 
-        function step(result) {
-            result.done ? resolve(result.value) : new P(function (resolve) {
-                resolve(result.value)
-            }).then(fulfilled, rejected)
-        }
+      function step(result) {
+        result.done ? resolve(result.value) : new P(function (resolve) {
+          resolve(result.value)
+        }).then(fulfilled, rejected)
+      }
 
-        step((generator = generator.apply(thisArg, _arguments || [])).next())
+      step((generator = generator.apply(thisArg, _arguments || [])).next())
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -78,11 +78,14 @@ class VerifiableCredentialHelper {
                 const addressDetails = yield this._addressHelper.generateAndSaveAddressDetails(accountId, toAttest.predicate, eventHandler);
                 const did = 'did:eth:' + addressDetails.address;
                 const selfAttestedVc = this._vcGenerator.generateVerifiableCredential({
-                    type: ['VerifiableCredential', 'DidOwnership'],
-                    credentialSubject: {},
-                    '@context': [toAttest.predicate],
-                    issuanceDate: new Date(),
-                    issuer: did
+                  type: ['VerifiableCredential', 'DidOwnership'],
+                  credentialSubject: {
+                    id: did,
+                    predicate: toAttest.predicate
+                  },
+                  '@context': [toAttest.predicate],
+                  issuanceDate: new Date(),
+                  issuer: did
                 }, accountId, addressDetails.keyId);
                 verifiableCredentials.push({ accountId: accountId, keyId: addressDetails.keyId, vc: selfAttestedVc });
             }
