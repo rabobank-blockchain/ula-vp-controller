@@ -1,3 +1,8 @@
+# 0.2.5 / 24-07-2020
+
+**Enhancements**
+- Security patches updates from dependent packages
+
 # 0.2.4 / 24-03-2020
 
 **Enhancements**
