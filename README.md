@@ -62,7 +62,6 @@ However, if you want to invoke this plugin manually, send a ULA message with thi
 ```typescript
 const msg = {
   type: 'process-challengerequest',
-  endpoint: '{endpoint from QR code}',
   msg: { /* IChallengeRequestParamsfields */
     toVerify: [{predicate: "{schema.org URL}", allowedIssuers: ["did:eth:allowedIssuer"]}, {predicate: "{schema.org URL}"}],
     toAttest: [{predicate: "{schema.org URL}"}, {predicate: "{schema.org URL}"}],

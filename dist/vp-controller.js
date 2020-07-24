@@ -1,6 +1,6 @@
 "use strict";
 /*
- *  Copyright 2019 Coöperatieve Rabobank U.A.
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ class VpController {
             if (message.properties.type !== 'process-challengerequest') {
                 return 'ignored'; // This message is not intended for us
             }
-            if (!message.properties.endpoint || !message.properties.msg) {
+            if (!message.properties.msg) {
                 return 'ignored'; // The message type is correct, but endpoint or msg is missing
             }
             if (!this._eventHandler) {
@@ -150,7 +150,8 @@ class VpController {
                 const selfAttestedVP = allFoundCredentials.length > 0 ?
                     this._vpGenerator.generateVerifiablePresentation({
                         type: ['VerifiablePresentation', 'ChallengeResponse'],
-                        verifiableCredential: allFoundCredentials
+                        verifiableCredential: allFoundCredentials,
+                        sessionId: challengeRequest.correspondenceId
                     }, selfAttestedDidInfo.concat(existingVcDidInfo), challengeRequest.correspondenceId)
                     : undefined;
                 // Ask for consent
@@ -173,7 +174,7 @@ class VpController {
                             challengeRequest: challengeRequest,
                             verifiablePresentation: selfAttestedVP
                         },
-                        url: message.properties.endpoint,
+                        url: challengeRequest.postEndpoint,
                         type: 'accept-consent'
                     }
                 }); // Todo: Redesign this message structure

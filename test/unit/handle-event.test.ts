@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Coöperatieve Rabobank U.A.
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -79,7 +79,6 @@ describe('vp controller handle event', function () {
   const initialUlaMessage = new Message(
     {
       type: initialUlaMessageType,
-      endpoint: getChallengeRequestEndpoint,
       msg: issueAndVerifyCRParams
     }
   )
@@ -104,16 +103,9 @@ describe('vp controller handle event', function () {
     return handleEventCall.should.eventually.equal('ignored')
   })
 
-  it('should return "ignored" when the message does not contain an endpoint property', () => {
-    const incompleteMessage = new Message({ type: initialUlaMessageType, msg: {} })
-    const handleEventCall = sut.handleEvent(incompleteMessage, undefined)
-    return handleEventCall.should.eventually.equal('ignored')
-  })
-
   it('should return "ignored" when the message does not contain an msg property', () => {
     const incompleteMessage = new Message({
-      type: initialUlaMessageType,
-      endpoint: 'https://example.com'
+      type: initialUlaMessageType
     })
     const handleEventCall = sut.handleEvent(incompleteMessage, undefined)
     return handleEventCall.should.eventually.equal('ignored')
@@ -629,10 +621,11 @@ describe('vp controller handle event', function () {
     }
 
     // Holder (VP, requesting consent to app)
-    let selfSignedVpWithoutProof: IVerifiablePresentationParams = {
+    let selfSignedVpWithoutProof = {
       type: ['VerifiablePresentation', 'ChallengeResponse'],
-      verifiableCredential: [selfSignedVcWithProof.vc, issuerVcWithProof]
-    }
+      verifiableCredential: [selfSignedVcWithProof.vc, issuerVcWithProof],
+      sessionId: issueAndVerifyCRParams.correspondenceId
+    } as IVerifiablePresentationParams
     let selfSignedVpWithProof = new VerifiablePresentation(
       Object.assign({ proof: [testProof] }, selfSignedVpWithoutProof)
     )
@@ -647,7 +640,7 @@ describe('vp controller handle event', function () {
         challengeRequest: new ChallengeRequest(issueAndVerifyCRParams),
         verifiablePresentation: selfSignedVpWithProof
       },
-      url: initialUlaMessage.properties.endpoint,
+      url: issueAndVerifyCRParams.postEndpoint,
       type: 'accept-consent'
     }
     let emptyConsentRequest = {
@@ -657,7 +650,7 @@ describe('vp controller handle event', function () {
         challengeRequest: new ChallengeRequest(issueAndVerifyCRParams),
         verifiablePresentation: undefined
       },
-      url: initialUlaMessage.properties.endpoint,
+      url: issueAndVerifyCRParams.postEndpoint,
       type: 'accept-consent'
     }
 

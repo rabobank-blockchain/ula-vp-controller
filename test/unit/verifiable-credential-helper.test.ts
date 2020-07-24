@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Coöperatieve Rabobank U.A.
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ describe('verifiable credential helper', function () {
   const cryptUtil = new LocalCryptUtils()
   const vcGenerator = new VerifiableCredentialGenerator(new VerifiableCredentialSigner(cryptUtil))
   const addressHelper = new AddressHelper(cryptUtil)
-  const publicAddress = '0x4900133bD1b8934946106CEc7DB3eD931710DC92'
+  const address = '0x4900133bD1b8934946106CEc7DB3eD931710DC92'
   const predicate = 'http://schema.org/address'
   const postEndpoint = 'http://domain.org/ssi/verifiable-presentation-endpoint'
   const testProof: IProofParams = {
@@ -297,7 +297,7 @@ describe('verifiable credential helper', function () {
     const accountId = 1001
     const keyId = 1234
     const expectedAddressDetails: IAddress = {
-      address: publicAddress,
+      address: address,
       accountId: accountId,
       keyId: keyId,
       predicate: predicate
@@ -313,13 +313,17 @@ describe('verifiable credential helper', function () {
     })
 
     sut.generateSelfAttestedVCs(challengeRequest, accountId, eventHandler).then((credentials) => {
+      const holderDid = 'did:eth:' + address
       addressHelperStub.should.have.been.calledOnceWithExactly(accountId, predicate, eventHandler)
       vcGeneratorStub.should.have.been.calledOnceWithExactly({
         type: ['VerifiableCredential', 'DidOwnership'],
-        credentialSubject: {},
+        credentialSubject: {
+          id: holderDid,
+          predicate: predicate
+        },
         '@context': [predicate],
         issuanceDate: new Date(),
-        issuer: 'did:eth:' + publicAddress
+        issuer: holderDid
       }, accountId, keyId)
       credentials.should.deep.equal([{ accountId: accountId, keyId: keyId, vc: dummyVc }])
       done()

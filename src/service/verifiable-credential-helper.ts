@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Coöperatieve Rabobank U.A.
+ *  Copyright 2020 Coöperatieve Rabobank U.A.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,7 +41,10 @@ export class VerifiableCredentialHelper {
       const did = 'did:eth:' + addressDetails.address
       const selfAttestedVc = this._vcGenerator.generateVerifiableCredential({
         type: ['VerifiableCredential', 'DidOwnership'],
-        credentialSubject: {},
+        credentialSubject: {
+          id: did,
+          predicate: toAttest.predicate
+        },
         '@context': [toAttest.predicate],
         issuanceDate: new Date(),
         issuer: did
