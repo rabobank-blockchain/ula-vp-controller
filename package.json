@@ -70,7 +70,7 @@
     "typescript": "^3.7.4"
   },
   "dependencies": {
-    "ula-vc-data-management": "^0.1.1",
+    "ula-vc-data-management": "^0.1.2",
     "universal-ledger-agent": "^0.1.3",
     "vp-toolkit": "^0.2.3",
     "vp-toolkit-models": "^0.2.2"
