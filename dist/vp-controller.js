@@ -15,14 +15,16 @@
  *  limitations under the License.
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.VpController = void 0;
 const universal_ledger_agent_1 = require("universal-ledger-agent");
 const vp_toolkit_models_1 = require("vp-toolkit-models");
 /**
@@ -197,7 +199,7 @@ class VpController {
             // Send challengeresponse (VP) and process the response from the endpoint
             const challengeRequest = message.properties.payload.challengeRequest;
             const selfAttestedVP = message.properties.payload.verifiablePresentation;
-            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP)
+            const response = yield this._httpService.postRequest(challengeRequest.postEndpoint, selfAttestedVP);
             let issuedCredentials = [];
             // The endpoint can either be an issuer sending back a VP - or a verifier sending back an empty response
             if (challengeRequest.toAttest.length > 0) {
@@ -213,7 +215,7 @@ class VpController {
                 }
             }
             // Save the VC's coming from the issuer
-            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials,
+            yield this._vcHelper.processTransaction(challengeRequest.proof.verificationMethod, selfAttestedVP.verifiableCredential.filter(vc => (!vc.type.includes('DidOwnership'))).map(vc => vc.proof.nonce), issuedCredentials, 
             // @ts-ignore
             this._eventHandler);
             callback(new universal_ledger_agent_1.UlaResponse({ statusCode: 1, body: { loading: false, success: true, failure: false } }));

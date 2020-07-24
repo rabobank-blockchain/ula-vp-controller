@@ -49,18 +49,19 @@ export declare class VpController implements Plugin {
      * The name of the plugin
      * @return {string}
      */
-    readonly name: string;
+    get name(): string;
     /**
      * The current wallet/profile ID
      * @return {number}
      */
+    get accountId(): number;
     /**
-    * When the user switches to a different
-    * wallet/profile, update the accountId
-    * to make sure the correct keys are
-    * generated and used.
-    */
-    accountId: number;
+     * When the user switches to a different
+     * wallet/profile, update the accountId
+     * to make sure the correct keys are
+     * generated and used.
+     */
+    set accountId(id: number);
     /**
      * Receive the eventHandler so we can put messages
      * back on the ULA again

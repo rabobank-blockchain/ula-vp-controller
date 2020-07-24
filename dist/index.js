@@ -16,9 +16,9 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var vp_controller_1 = require("./vp-controller");
-exports.VpController = vp_controller_1.VpController;
+Object.defineProperty(exports, "VpController", { enumerable: true, get: function () { return vp_controller_1.VpController; } });
 var address_helper_1 = require("./service/address-helper");
-exports.AddressHelper = address_helper_1.AddressHelper;
+Object.defineProperty(exports, "AddressHelper", { enumerable: true, get: function () { return address_helper_1.AddressHelper; } });
 var verifiable_credential_helper_1 = require("./service/verifiable-credential-helper");
-exports.VerifiableCredentialHelper = verifiable_credential_helper_1.VerifiableCredentialHelper;
+Object.defineProperty(exports, "VerifiableCredentialHelper", { enumerable: true, get: function () { return verifiable_credential_helper_1.VerifiableCredentialHelper; } });
 //# sourceMappingURL=index.js.map
